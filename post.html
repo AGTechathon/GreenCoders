@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head><title>Post Food - ZeroWaste</title></head>
+<body>
+  <h2>Post Food</h2>
+  <input id="name" placeholder="Food name"><br>
+  <input id="location" placeholder="Location"><br>
+  <input id="quantity" type="number" placeholder="Quantity"><br>
+  <button onclick="postFood()">Post</button>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="firebase-config.js"></script>
+  <script>
+    function postFood() {
+      const name = document.getElementById("name").value;
+      const location = document.getElementById("location").value;
+      const quantity = document.getElementById("quantity").value;
+
+      firebase.database().ref("food_posts").push({
+        name: name,
+        location: location,
+        quantity: quantity,
+        time: new Date().toLocaleString()
+      }).then(() => {
+        alert("Posted!");
+        document.getElementById("name").value = "";
+        document.getElementById("location").value = "";
+        document.getElementById("quantity").value = "";
+      });
+    }
+  </script>
+</body>
+</html>
