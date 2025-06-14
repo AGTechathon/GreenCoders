@@ -1,32 +1,264 @@
 <!DOCTYPE html>
-<html>
-<head><title>Login - ZeroWaste</title></head>
-<body>
-  <h2>Login</h2>
-  <input type="email" id="email" placeholder="Email"><br>
-  <input type="password" id="password" placeholder="Password"><br>
-  <button onclick="login()">Login</button>
-  <button onclick="signup()">Signup</button>
-
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="firebase-config.js"></script>
-  <script>
-    function login() {
-      var email = document.getElementById("email").value;
-      var password = document.getElementById("password").value;
-      firebase.auth().signInWithEmailAndPassword(email, password)
-        .then(() => alert("Login successful"))
-        .catch(error => alert(error.message));
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    function signup() {
-      var email = document.getElementById("email").value;
-      var password = document.getElementById("password").value;
-      firebase.auth().createUserWithEmailAndPassword(email, password)
-        .then(() => alert("Signup successful"))
-        .catch(error => alert(error.message));
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #f0f2f5;
     }
+
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      text-align: center;
+      color: #1a73e8;
+      margin-bottom: 1.5rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+      margin-top: 0.3rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.8rem;
+      background: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+
+    button:hover {
+      background: #1557b0;
+    }
+
+    .google-btn {
+      background: white;
+      color: #757575;
+      border: 1px solid #ddd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .google-btn:hover {
+      background: #f8f9fa;
+    }
+
+    .divider {
+      text-align: center;
+      margin: 1rem 0;
+      position: relative;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 45%;
+      height: 1px;
+      background: #ddd;
+    }
+
+    .divider::before {
+      left: 0;
+    }
+
+    .divider::after {
+      right: 0;
+    }
+
+    .error-message {
+      color: #d93025;
+      font-size: 0.9rem;
+      margin-top: 0.3rem;
+      display: none;
+    }
+
+    .signup-link {
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    .signup-link a {
+      color: #1a73e8;
+      text-decoration: none;
+    }
+
+    .signup-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Login</h1>
+    <form id="loginForm" onsubmit="return false;">
+      <div class="form-group">
+        <input type="email" id="email" placeholder="Email" required>
+      </div>
+      <div class="form-group">
+        <input type="password" id="password" placeholder="Password" required>
+      </div>
+      <div class="error-message" id="errorMessage"></div>
+      <button type="button" id="loginButton">Login</button>
+      <div class="terms-privacy-text" style="margin-top:12px;font-size:0.97em;color:#666;text-align:center;">
+        By logging in, you agree to our
+        <a href="terms.html" target="_blank" style="color:#2196F3;text-decoration:underline;">Terms</a>
+        and
+        <a href="privacy.html" target="_blank" style="color:#2196F3;text-decoration:underline;">Privacy Policy</a>.
+      </div>
+    </form>
+    <div class="divider">or</div>
+    <button class="google-btn" id="googleSignIn">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18" alt="Google">
+      Sign in with Google
+    </button>
+    <div class="signup-link">
+      Don't have an account? <a href="signup.html">Sign up</a>
+    </div>
+  </div>
+
+  <script>
+    // Your Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyD_O9c-3FhOqPcaMuY8mfc0gvI0IFcOqHY",
+      authDomain: "zerowaste-a7d52.firebaseapp.com",
+      databaseURL: "https://zerowaste-a7d52-default-rtdb.firebaseio.com",
+      projectId: "zerowaste-a7d52",
+      storageBucket: "zerowaste-a7d52.appspot.com",
+      messagingSenderId: "948595794347",
+      appId: "1:948595794347:web:c62cac51d1b46e27de72ee",
+      measurementId: "G-PBCS66JXZ8"
+    };
+
+    // Initialize Firebase
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+    // Get form elements
+    const loginForm = document.getElementById('loginForm');
+    const loginButton = document.getElementById('loginButton');
+    const googleSignInBtn = document.getElementById('googleSignIn');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // Email/Password Login
+    loginButton.addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      if (!email || !password) {
+        errorMessage.style.display = 'block';
+        errorMessage.textContent = 'Please fill in all fields';
+        return;
+      }
+
+      try {
+        // Show loading state
+        loginButton.disabled = true;
+        loginButton.textContent = 'Logging in...';
+
+        // Sign in user
+        await firebase.auth().signInWithEmailAndPassword(email, password);
+        
+        // Show success message
+        alert('Login successful! Redirecting to dashboard...');
+        
+        // Redirect to dashboard
+        window.location.replace('index.html');
+      } catch (error) {
+  console.error('Login error:', error);
+  errorMessage.style.display = 'block';
+
+  // Friendly error messages
+  switch (error.code) {
+    case 'auth/user-not-found':
+      errorMessage.textContent = '❌ No user found with this email.';
+      break;
+    case 'auth/wrong-password':
+      errorMessage.textContent = '❌ Incorrect password. Please try again.';
+      break;
+    case 'auth/invalid-email':
+      errorMessage.textContent = '❌ Invalid email format.';
+      break;
+    case 'auth/user-disabled':
+      errorMessage.textContent = '❌ This account has been disabled.';
+      break;
+    default:
+      errorMessage.textContent = '❌ Invalid email or password.';
+  }
+
+  // Reset button state
+  loginButton.disabled = false;
+  loginButton.textContent = 'Login';
+}
+
+    });
+
+    // Google Sign In
+    googleSignInBtn.addEventListener('click', async () => {
+      try {
+        // Show loading state
+        googleSignInBtn.disabled = true;
+        googleSignInBtn.textContent = 'Signing in...';
+
+        const provider = new firebase.auth.GoogleAuthProvider();
+        await firebase.auth().signInWithPopup(provider);
+
+        // Show success message
+        alert('Login successful! Redirecting to dashboard...');
+        
+        // Redirect to dashboard
+        window.location.replace('index.html');
+      } catch (error) {
+        console.error('Google sign in error:', error);
+        errorMessage.style.display = 'block';
+        errorMessage.textContent = error.message;
+        
+        // Reset button state
+        googleSignInBtn.disabled = false;
+        googleSignInBtn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18" alt="Google"> Sign in with Google';
+      }
+    });
   </script>
 </body>
 </html>
