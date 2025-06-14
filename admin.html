@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - ZeroWaste</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <!-- Firebase Setup -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="firebase-config.js"></script>
+  <style>
+    :root {
+      --sidebar-width: 250px;
+      --header-height: 60px;
+      --primary-color: #4CAF50;
+      --secondary-color: #388E3C;
+      --danger-color: #f44336;
+      --warning-color: #ff9800;
+      --info-color: #2196F3;
+      --light-gray: #f5f5f5;
+      --dark-gray: #333;
+      --text-gray: #666;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      background-color: #f0f2f5;
+    }
+    
+    .admin-container {
+      display: flex;
+      min-height: 100vh;
+    }
+    
+    /* Sidebar Styles */
+    .admin-sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--dark-gray);
+      color: white;
+      position: fixed;
+      height: 100vh;
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    
+    .sidebar-header {
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+    
+    .sidebar-header h3 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+    
+    .sidebar-menu {
+      padding: 20px 0;
+    }
+    
+    .menu-item {
+      padding: 12px 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      border-left: 4px solid transparent;
+    }
+    
+    .menu-item:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .menu-item.active {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-left: 4px solid var(--primary-color);
+    }
+    
+    .menu-item i {
+      margin-right: 10px;
+      width: 20px;
+      text-align: center;
+    }
+    
+    /* Main Content Styles */
+    .admin-main {
+      flex: 1;
+      margin-left: var(--sidebar-width);
+      transition: all 0.3s;
+    }
+    
+    .admin-header {
+      height: var(--header-height);
+      background-color: white;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .header-left {
+      display: flex;
+      align-items: center;
+    }
+    
+    .toggle-sidebar {
+      font-size: 1.2rem;
+      margin-right: 20px;
+      cursor: pointer;
+    }
+    
+    .header-right {
+      display: flex;
+      align-items: center;
+    }
+    
+    .admin-profile {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+    
+    .admin-profile img {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+    
+    .admin-content {
+      padding: 20px;
+    }
+    
+    /* Dashboard Cards */
+    .dashboard-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      padding: 20px;
+      transition: transform 0.3s;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .card-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: white;
+    }
+    
+    .card-icon.users {
+      background-color: var(--info-color);
+    }
+    
+    .card-icon.food {
+      background-color: var(--primary-color);
+    }
+    
+    .card-icon.donations {
+      background-color: var(--warning-color);
+    }
+    
+    .card-icon.claims {
+      background-color: var(--danger-color);
+    }
+    
+    .card-title {
+      font-size: 0.9rem;
+      color: var(--text-gray);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .card-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    
+    .card-footer {
+      font-size: 0.8rem;
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+    }
+    
+    .card-footer i {
+      margin-left: 5px;
+    }
+    
+    /* Data Tables */
+    .data-table {
+      width: 100%;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+    
+    .table-header {
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .table-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    
+    .table-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .btn {
+      padding: 8px 15px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.3s;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--secondary-color);
+    }
+    
+    .btn-danger {
+      background-color: var(--danger-color);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background-color: #d32f2f;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    
+    th {
+      background-color: #f9f9f9;
+      font-weight: 600;
+      color: var(--dark-gray);
+    }
+    
+    tr:hover {
+      background-color: #f5f5f5;
+    }
+    
+    .status-badge {
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    
+    .status-available {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+    
+    .status-claimed {
+      background-color: #f5f5f5;
+      color: #616161;
+    }
+    
+    .action-btn {
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.8rem;
+      margin-right: 5px;
+    }
+    
+    .edit-btn {
+      background-color: var(--info-color);
+      color: white;
+    }
+    
+    .delete-btn {
+      background-color: var(--danger-color);
+      color: white;
+    }
+    
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .modal-content {
+      background-color: white;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .modal-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    
+    .close-modal {
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-gray);
+    }
+    
+    .modal-body {
+      padding: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    
+    .form-group textarea {
+      min-height: 100px;
+    }
+    
+    .modal-footer {
+      padding: 15px 20px;
+      border-top: 1px solid #eee;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    
+    /* Login Page */
+    .login-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #f0f2f5;
+    }
+    
+    .login-box {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+      padding: 30px;
+    }
+    
+    .login-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .login-header h2 {
+      color: var(--primary-color);
+      margin-bottom: 10px;
+    }
+    
+    .login-form .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .login-form input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    
+    .login-btn:hover {
+      background-color: var(--secondary-color);
+    }
+    
+    .error-message {
+      color: var(--danger-color);
+      font-size: 0.9rem;
+      margin-top: 5px;
+      display: none;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .admin-sidebar {
+        transform: translateX(-100%);
+      }
+      
+      .admin-sidebar.active {
+        transform: translateX(0);
+      }
+      
+      .admin-main {
+        margin-left: 0;
+      }
+      
+      .dashboard-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 20px;
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+    }
+    
+    .tab.active {
+      border-bottom: 3px solid var(--primary-color);
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!-- Admin Login (shown when not authenticated) -->
+  <div id="admin-login" class="login-container">
+    <div class="login-box">
+      <div class="login-header">
+        <h2>Admin Login</h2>
+        <p>ZeroWaste Admin Panel</p>
+      </div>
+      <form id="loginForm" class="login-form">
+        <div class="form-group">
+          <input type="text" id="admin-username" placeholder="Username" required>
+        </div>
+        <div class="form-group">
+          <input type="password" id="admin-password" placeholder="Password" required>
+        </div>
+        <div id="login-error" class="error-message"></div>
+        <button type="button" id="login-btn" class="login-btn">Login</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin Panel (shown when authenticated) -->
+  <div id="admin-panel" class="admin-container" style="display: none;">
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+      <div class="sidebar-header">
+        <h3>ZeroWaste Admin</h3>
+      </div>
+      <div class="sidebar-menu">
+        <div class="menu-item active" data-tab="dashboard">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Dashboard</span>
+        </div>
+        <div class="menu-item" data-tab="users">
+          <i class="fas fa-users"></i>
+          <span>Users</span>
+        </div>
+        <div class="menu-item" data-tab="food-posts">
+          <i class="fas fa-utensils"></i>
+          <span>Food Posts</span>
+        </div>
+        <div class="menu-item" data-tab="claims">
+          <i class="fas fa-hand-holding-heart"></i>
+          <span>Claims</span>
+        </div>
+        <div class="menu-item" data-tab="reports">
+          <i class="fas fa-chart-bar"></i>
+          <span>Reports</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="admin-main">
+      <!-- Header -->
+      <div class="admin-header">
+        <div class="header-left">
+          <div class="toggle-sidebar">
+            <i class="fas fa-bars"></i>
+          </div>
+          <h3 id="page-title">Dashboard</h3>
+        </div>
+        <div class="header-right">
+          <div class="admin-profile" id="admin-profile">
+            <img src="https://ik.imagekit.io/tpmux1nef/WhatsApp%20Image%202025-06-14%20at%208.32.13%20PM.jpeg?updatedAt=1749913886149" alt="Admin">
+            <span>Admin</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="admin-content">
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+          <div class="dashboard-cards">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Total Users</div>
+                  <div class="card-value" id="total-users">0</div>
+                </div>
+                <div class="card-icon users">
+                  <i class="fas fa-users"></i>
+                </div>
+              </div>
+              <div class="card-footer">
+                <span>View All</span>
+                <i class="fas fa-arrow-right"></i>
+              </div>
+            </div>
+            
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Food Posts</div>
+                  <div class="card-value" id="total-posts">0</div>
+                </div>
+                <div class="card-icon food">
+                  <i class="fas fa-utensils"></i>
+                </div>
+              </div>
+              <div class="card-footer">
+                <span>View All</span>
+                <i class="fas fa-arrow-right"></i>
+              </div>
+            </div>
+            
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Donations</div>
+                  <div class="card-value" id="total-donations">0</div>
+                </div>
+                <div class="card-icon donations">
+                  <i class="fas fa-share"></i>
+                </div>
+              </div>
+              <div class="card-footer">
+                <span>View All</span>
+                <i class="fas fa-arrow-right"></i>
+              </div>
+            </div>
+            
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Claims</div>
+                  <div class="card-value" id="total-claims">0</div>
+                </div>
+                <div class="card-icon claims">
+                  <i class="fas fa-hand-holding-heart"></i>
+                </div>
+              </div>
+              <div class="card-footer">
+                <span>View All</span>
+                <i class="fas fa-arrow-right"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="data-table">
+            <div class="table-header">
+              <div class="table-title">Recent Activity</div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th>User</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="recent-activity">
+                <!-- Will be populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Users Tab -->
+        <div id="users" class="tab-content">
+          <div class="data-table">
+            <div class="table-header">
+              <div class="table-title">All Users</div>
+              <div class="table-actions">
+                <button class="btn btn-primary" id="add-user-btn">
+                  <i class="fas fa-plus"></i> Add User
+                </button>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Donations</th>
+                  <th>Claims</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-table">
+                <!-- Will be populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Food Posts Tab -->
+        <div id="food-posts" class="tab-content">
+          <div class="tabs">
+            <div class="tab active" data-subtab="all-posts">All Posts</div>
+            <div class="tab" data-subtab="available">Available</div>
+            <div class="tab" data-subtab="claimed">Claimed</div>
+          </div>
+          
+          <div id="all-posts" class="subtab-content active">
+            <div class="data-table">
+              <div class="table-header">
+                <div class="table-title">All Food Posts</div>
+                <div class="table-actions">
+                  <button class="btn btn-primary" id="add-food-btn">
+                    <i class="fas fa-plus"></i> Add Food
+                  </button>
+                </div>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Food Name</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Posted By</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="food-posts-table">
+                  <!-- Will be populated by JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div id="available" class="subtab-content">
+            <div class="data-table">
+              <div class="table-header">
+                <div class="table-title">Available Food Posts</div>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Food Name</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
+                    <th>Location</th>
+                    <th>Posted By</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="available-food-table">
+                  <!-- Will be populated by JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div id="claimed" class="subtab-content">
+            <div class="data-table">
+              <div class="table-header">
+                <div class="table-title">Claimed Food Posts</div>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Food Name</th>
+                    <th>Type</th>
+                    <th>Quantity</th>
+                    <th>Claimed By</th>
+                    <th>Location</th>
+                    <th>Posted By</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="claimed-food-table">
+                  <!-- Will be populated by JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Claims Tab -->
+        <div id="claims" class="tab-content">
+          <div class="data-table">
+            <div class="table-header">
+              <div class="table-title">All Claims</div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Food Item</th>
+                  <th>Claimed By</th>
+                  <th>Quantity</th>
+                  <th>Claim Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="claims-table">
+                <!-- Will be populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Reports Tab -->
+        <div id="reports" class="tab-content">
+          <div class="dashboard-cards">
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Total Meals Saved</div>
+                  <div class="card-value" id="total-meals">0</div>
+                </div>
+                <div class="card-icon users">
+                  <i class="fas fa-utensils"></i>
+                </div>
+              </div>
+              <div class="card-footer">
+                <span>Last 30 days</span>
+              </div>
+            </div>
+            
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">CO₂ Saved (kg)</div>
+                  <div class="card-value" id="total-co2">0</div>
+                </div>
+                <div class="card-icon food">
+                  <i class="fas fa-leaf"></i>
+                </div>
+              </div>
+              <div class="card-footer">
+                <span>Estimated</span>
+              </div>
+            </div>
+            
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">Active Donors</div>
+                  <div class="card-value" id="active-donors">0</div>
+                </div>
+                <div class="card-icon donations">
+                  <i class="fas fa-user"></i>
+                </div>
+              </div>
+              <div class="card-footer">
+                <span>This month</span>
+              </div>
+            </div>
+            
+            <div class="card">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">People Helped</div>
+                  <div class="card-value" id="people-helped">0</div>
+                </div>
+                <div class="card-icon claims">
+                  <i class="fas fa-hands-helping"></i>
+                </div>
+              </div>
+              <div class="card-footer">
+                <span>This month</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="data-table">
+            <div class="table-header">
+              <div class="table-title">Monthly Statistics</div>
+            </div>
+            <div style="padding: 20px;">
+              <canvas id="stats-chart" height="300"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add User Modal -->
+  <div id="add-user-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Add New User</div>
+        <div class="close-modal">&times;</div>
+      </div>
+      <div class="modal-body">
+        <form id="add-user-form">
+          <div class="form-group">
+            <label for="user-name">Full Name</label>
+            <input type="text" id="user-name" required>
+          </div>
+          <div class="form-group">
+            <label for="user-email">Email</label>
+            <input type="email" id="user-email" required>
+          </div>
+          <div class="form-group">
+            <label for="user-password">Password</label>
+            <input type="password" id="user-password" required>
+          </div>
+          <div class="form-group">
+            <label for="user-role">Role</label>
+            <select id="user-role" required>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger close-modal">Cancel</button>
+        <button class="btn btn-primary" id="save-user-btn">Save User</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div id="edit-user-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Edit User</div>
+        <div class="close-modal">&times;</div>
+      </div>
+      <div class="modal-body">
+        <form id="edit-user-form">
+          <input type="hidden" id="edit-user-id">
+          <div class="form-group">
+            <label for="edit-user-name">Full Name</label>
+            <input type="text" id="edit-user-name" required>
+          </div>
+          <div class="form-group">
+            <label for="edit-user-email">Email</label>
+            <input type="email" id="edit-user-email" required>
+          </div>
+          <div class="form-group">
+            <label for="edit-user-role">Role</label>
+            <select id="edit-user-role" required>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger close-modal">Cancel</button>
+        <button class="btn btn-primary" id="update-user-btn">Update User</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Food Modal -->
+  <div id="add-food-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Add New Food Post</div>
+        <div class="close-modal">&times;</div>
+      </div>
+      <div class="modal-body">
+        <form id="add-food-form">
+          <div class="form-group">
+            <label for="food-name">Food Name</label>
+            <input type="text" id="food-name" required>
+          </div>
+          <div class="form-group">
+            <label for="food-type">Food Type</label>
+            <select id="food-type" required>
+              <option value="Cooked Meal">Cooked Meal</option>
+              <option value="Packaged Food">Packaged Food</option>
+              <option value="Fruits/Veggies">Fruits/Veggies</option>
+              <option value="Bakery Items">Bakery Items</option>
+              <option value="Dairy">Dairy</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="food-quantity">Quantity</label>
+            <input type="number" id="food-quantity" min="1" required>
+          </div>
+          <div class="form-group">
+            <label for="food-measurement">Measurement</label>
+            <select id="food-measurement" required>
+              <option value="servings">Servings</option>
+              <option value="plates">Plates</option>
+              <option value="kg">Kilograms</option>
+              <option value="units">Units</option>
+              <option value="packets">Packets</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="food-location">Location</label>
+            <input type="text" id="food-location" required>
+          </div>
+          <div class="form-group">
+            <label for="food-expiry">Expiry Date/Time</label>
+            <input type="datetime-local" id="food-expiry" required>
+          </div>
+          <div class="form-group">
+            <label for="food-description">Description</label>
+            <textarea id="food-description"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="food-status">Status</label>
+            <select id="food-status" required>
+              <option value="available">Available</option>
+              <option value="claimed">Claimed</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger close-modal">Cancel</button>
+        <button class="btn btn-primary" id="save-food-btn">Save Food Post</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Food Modal -->
+  <div id="edit-food-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Edit Food Post</div>
+        <div class="close-modal">&times;</div>
+      </div>
+      <div class="modal-body">
+        <form id="edit-food-form">
+          <input type="hidden" id="edit-food-id">
+          <div class="form-group">
+            <label for="edit-food-name">Food Name</label>
+            <input type="text" id="edit-food-name" required>
+          </div>
+          <div class="form-group">
+            <label for="edit-food-type">Food Type</label>
+            <select id="edit-food-type" required>
+              <option value="Cooked Meal">Cooked Meal</option>
+              <option value="Packaged Food">Packaged Food</option>
+              <option value="Fruits/Veggies">Fruits/Veggies</option>
+              <option value="Bakery Items">Bakery Items</option>
+              <option value="Dairy">Dairy</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edit-food-quantity">Quantity</label>
+            <input type="number" id="edit-food-quantity" min="1" required>
+          </div>
+          <div class="form-group">
+            <label for="edit-food-measurement">Measurement</label>
+            <select id="edit-food-measurement" required>
+              <option value="servings">Servings</option>
+              <option value="plates">Plates</option>
+              <option value="kg">Kilograms</option>
+              <option value="units">Units</option>
+              <option value="packets">Packets</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edit-food-location">Location</label>
+            <input type="text" id="edit-food-location" required>
+          </div>
+          <div class="form-group">
+            <label for="edit-food-expiry">Expiry Date/Time</label>
+            <input type="datetime-local" id="edit-food-expiry" required>
+          </div>
+          <div class="form-group">
+            <label for="edit-food-description">Description</label>
+            <textarea id="edit-food-description"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="edit-food-status">Status</label>
+            <select id="edit-food-status" required>
+              <option value="available">Available</option>
+              <option value="claimed">Claimed</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger close-modal">Cancel</button>
+        <button class="btn btn-primary" id="update-food-btn">Update Food Post</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirm-modal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <div class="modal-title" id="confirm-title">Confirm Action</div>
+        <div class="close-modal">&times;</div>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-message">Are you sure you want to perform this action?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-danger close-modal">Cancel</button>
+        <button class="btn btn-primary" id="confirm-action-btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Include Chart.js for reports -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <script>
+    // Admin credentials
+    const ADMIN_CREDENTIALS = {
+      username: "admin",
+      password: "admin@123"
+    };
+    
+    // DOM Elements
+    const adminLogin = document.getElementById('admin-login');
+    const adminPanel = document.getElementById('admin-panel');
+    const loginForm = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('login-btn');
+    const adminUsername = document.getElementById('admin-username');
+    const adminPassword = document.getElementById('admin-password');
+    const loginError = document.getElementById('login-error');
+    
+    // Check authentication state
+    function checkAuth() {
+      const isAuthenticated = localStorage.getItem('adminAuthenticated') === 'true';
+      
+      if (isAuthenticated) {
+        adminLogin.style.display = 'none';
+        adminPanel.style.display = 'flex';
+        loadDashboardData();
+      } else {
+        adminLogin.style.display = 'flex';
+        adminPanel.style.display = 'none';
+      }
+    }
+    
+    // Login function
+    function adminLoginHandler() {
+      const username = adminUsername.value.trim();
+      const password = adminPassword.value.trim();
+      
+      if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+        // Successful login
+        localStorage.setItem('adminAuthenticated', 'true');
+        checkAuth();
+      } else {
+        // Failed login
+        loginError.style.display = 'block';
+        loginError.textContent = 'Invalid username or password';
+      }
+    }
+    
+    // Logout function
+    function adminLogoutHandler() {
+      localStorage.removeItem('adminAuthenticated');
+      checkAuth();
+      adminUsername.value = '';
+      adminPassword.value = '';
+      loginError.style.display = 'none';
+    }
+    
+    // Event Listeners
+    loginBtn.addEventListener('click', adminLoginHandler);
+    document.getElementById('admin-profile').addEventListener('click', adminLogoutHandler);
+    
+    // Initialize
+    checkAuth();
+    
+    // Dashboard Data Loading
+    function loadDashboardData() {
+      // Load total users
+      firebase.database().ref('users').once('value').then(snapshot => {
+        const userCount = snapshot.numChildren();
+        document.getElementById('total-users').textContent = userCount;
+      });
+      
+      // Load total food posts
+      firebase.database().ref('food_posts').once('value').then(snapshot => {
+        const postCount = snapshot.numChildren();
+        document.getElementById('total-posts').textContent = postCount;
+      });
+      
+      // Load total donations (meals saved)
+      firebase.database().ref('total_meals').once('value').then(snapshot => {
+        const donations = snapshot.val() || 0;
+        document.getElementById('total-donations').textContent = donations.toLocaleString();
+        document.getElementById('total-meals').textContent = donations.toLocaleString();
+        
+        // Calculate CO2 saved (2.5kg per meal)
+        const co2Saved = donations * 2.5;
+        document.getElementById('total-co2').textContent = co2Saved.toLocaleString();
+      });
+      
+      // Load total claims
+      firebase.database().ref('claims').once('value').then(snapshot => {
+        let claimCount = 0;
+        snapshot.forEach(userSnapshot => {
+          userSnapshot.forEach(daySnapshot => {
+            claimCount += daySnapshot.val();
+          });
+        });
+        document.getElementById('total-claims').textContent = claimCount.toLocaleString();
+      });
+      
+      // Load active donors
+      firebase.database().ref('total_donors').once('value').then(snapshot => {
+        const donors = snapshot.val() || 0;
+        document.getElementById('active-donors').textContent = donors.toLocaleString();
+      });
+      
+      // Load people helped
+      firebase.database().ref('total_receivers').once('value').then(snapshot => {
+        const receivers = snapshot.val() || 0;
+        document.getElementById('people-helped').textContent = receivers.toLocaleString();
+      });
+      
+      // Load recent activity
+      loadRecentActivity();
+      
+      // Load users table
+      loadUsersTable();
+      
+      // Load food posts table
+      loadFoodPostsTable();
+      
+      // Load claims table
+      loadClaimsTable();
+      
+      // Initialize chart
+      initStatsChart();
+    }
+    
+    // Load recent activity
+    function loadRecentActivity() {
+      const activityRef = firebase.database().ref('food_posts').orderByChild('timestamp').limitToLast(5);
+      
+      activityRef.on('value', snapshot => {
+        const activityTable = document.getElementById('recent-activity');
+        activityTable.innerHTML = '';
+        
+        if (!snapshot.exists()) {
+          activityTable.innerHTML = '<tr><td colspan="4">No recent activity</td></tr>';
+          return;
+        }
+        
+        const activities = [];
+        snapshot.forEach(child => {
+          activities.unshift(child.val()); // Add to beginning of array to show newest first
+        });
+        
+        activities.forEach(activity => {
+          const row = document.createElement('tr');
+          
+          const typeCell = document.createElement('td');
+          typeCell.textContent = 'Food Post';
+          
+          const descCell = document.createElement('td');
+          descCell.textContent = `${activity.name} (${activity.quantity} ${activity.measurement || 'servings'})`;
+          
+          const userCell = document.createElement('td');
+          userCell.textContent = activity.postedByEmail || 'Anonymous';
+          
+          const timeCell = document.createElement('td');
+          const postDate = new Date(activity.timestamp);
+          timeCell.textContent = postDate.toLocaleString();
+          
+          row.appendChild(typeCell);
+          row.appendChild(descCell);
+          row.appendChild(userCell);
+          row.appendChild(timeCell);
+          
+          activityTable.appendChild(row);
+        });
+      });
+    }
+    
+    // Load users table
+    function loadUsersTable() {
+      const usersRef = firebase.database().ref('users');
+      
+      usersRef.on('value', snapshot => {
+        const usersTable = document.getElementById('users-table');
+        usersTable.innerHTML = '';
+        
+        if (!snapshot.exists()) {
+          usersTable.innerHTML = '<tr><td colspan="7">No users found</td></tr>';
+          return;
+        }
+        
+        snapshot.forEach(userSnapshot => {
+          const user = userSnapshot.val();
+          const userId = userSnapshot.key;
+          
+          const row = document.createElement('tr');
+          
+          // ID
+          const idCell = document.createElement('td');
+          idCell.textContent = userId.substring(0, 8) + '...';
+          
+          // Name
+          const nameCell = document.createElement('td');
+          nameCell.textContent = user.displayName || 'No name';
+          
+          // Email
+          const emailCell = document.createElement('td');
+          emailCell.textContent = user.email || 'No email';
+          
+          // Role
+          const roleCell = document.createElement('td');
+          roleCell.textContent = user.role || 'user';
+          
+          // Donations
+          const donationsCell = document.createElement('td');
+          donationsCell.textContent = user.hasDonated ? 'Yes' : 'No';
+          
+          // Claims
+          const claimsCell = document.createElement('td');
+          claimsCell.textContent = user.hasReceived ? 'Yes' : 'No';
+          
+          // Actions
+          const actionsCell = document.createElement('td');
+          actionsCell.style.whiteSpace = 'nowrap';
+          
+          const editBtn = document.createElement('button');
+          editBtn.className = 'action-btn edit-btn';
+          editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+          editBtn.onclick = () => openEditUserModal(userId, user);
+          
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'action-btn delete-btn';
+          deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+          deleteBtn.onclick = () => confirmDeleteUser(userId, user.email);
+          
+          actionsCell.appendChild(editBtn);
+          actionsCell.appendChild(deleteBtn);
+          
+          row.appendChild(idCell);
+          row.appendChild(nameCell);
+          row.appendChild(emailCell);
+          row.appendChild(roleCell);
+          row.appendChild(donationsCell);
+          row.appendChild(claimsCell);
+          row.appendChild(actionsCell);
+          
+          usersTable.appendChild(row);
+        });
+      });
+    }
+    
+    // Load food posts table
+    function loadFoodPostsTable() {
+      const foodRef = firebase.database().ref('food_posts');
+      
+      foodRef.on('value', snapshot => {
+        const foodTable = document.getElementById('food-posts-table');
+        const availableTable = document.getElementById('available-food-table');
+        const claimedTable = document.getElementById('claimed-food-table');
+        
+        foodTable.innerHTML = '';
+        availableTable.innerHTML = '';
+        claimedTable.innerHTML = '';
+        
+        if (!snapshot.exists()) {
+          foodTable.innerHTML = '<tr><td colspan="8">No food posts found</td></tr>';
+          availableTable.innerHTML = '<tr><td colspan="7">No available food posts</td></tr>';
+          claimedTable.innerHTML = '<tr><td colspan="8">No claimed food posts</td></tr>';
+          return;
+        }
+        
+        snapshot.forEach(foodSnapshot => {
+          const food = foodSnapshot.val();
+          const foodId = foodSnapshot.key;
+          
+          const row = document.createElement('tr');
+          
+          // ID
+          const idCell = document.createElement('td');
+          idCell.textContent = foodId.substring(0, 8) + '...';
+          
+          // Name
+          const nameCell = document.createElement('td');
+          nameCell.textContent = food.name;
+          
+          // Type
+          const typeCell = document.createElement('td');
+          typeCell.textContent = food.foodType || 'Food';
+          
+          // Quantity
+          const quantityCell = document.createElement('td');
+          quantityCell.textContent = `${food.quantity} ${food.measurement || 'servings'}`;
+          
+          // Location
+          const locationCell = document.createElement('td');
+          locationCell.textContent = food.location;
+          
+          // Status
+          const statusCell = document.createElement('td');
+          const statusBadge = document.createElement('span');
+          statusBadge.className = `status-badge status-${food.status || 'available'}`;
+          statusBadge.textContent = food.status || 'available';
+          statusCell.appendChild(statusBadge);
+          
+          // Posted By
+          const postedByCell = document.createElement('td');
+          postedByCell.textContent = food.postedByEmail || 'Anonymous';
+          
+          // Actions
+          const actionsCell = document.createElement('td');
+          actionsCell.style.whiteSpace = 'nowrap';
+          
+          const editBtn = document.createElement('button');
+          editBtn.className = 'action-btn edit-btn';
+          editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+          editBtn.onclick = () => openEditFoodModal(foodId, food);
+          
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'action-btn delete-btn';
+          deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+          deleteBtn.onclick = () => confirmDeleteFood(foodId, food.name);
+          
+          actionsCell.appendChild(editBtn);
+          actionsCell.appendChild(deleteBtn);
+          
+          row.appendChild(idCell);
+          row.appendChild(nameCell);
+          row.appendChild(typeCell);
+          row.appendChild(quantityCell);
+          row.appendChild(locationCell);
+          row.appendChild(statusCell);
+          row.appendChild(postedByCell);
+          row.appendChild(actionsCell);
+          
+          foodTable.appendChild(row);
+          
+          // Add to available or claimed table
+          if (food.status === 'claimed') {
+            const claimedRow = row.cloneNode(true);
+            claimedTable.appendChild(claimedRow);
+          } else {
+            const availableRow = row.cloneNode(true);
+            // Remove status cell for available table
+            availableRow.removeChild(availableRow.cells[5]);
+            availableTable.appendChild(availableRow);
+          }
+        });
+      });
+    }
+    
+    // Load claims table
+    function loadClaimsTable() {
+      // This is a simplified implementation - you might need to adjust based on your data structure
+      const claimsRef = firebase.database().ref('food_posts').orderByChild('status').equalTo('claimed');
+      
+      claimsRef.on('value', snapshot => {
+        const claimsTable = document.getElementById('claims-table');
+        claimsTable.innerHTML = '';
+        
+        if (!snapshot.exists()) {
+          claimsTable.innerHTML = '<tr><td colspan="7">No claims found</td></tr>';
+          return;
+        }
+        
+        snapshot.forEach(foodSnapshot => {
+          const food = foodSnapshot.val();
+          const foodId = foodSnapshot.key;
+          
+          const row = document.createElement('tr');
+          
+          // ID
+          const idCell = document.createElement('td');
+          idCell.textContent = foodId.substring(0, 8) + '...';
+          
+          // Food Item
+          const foodCell = document.createElement('td');
+          foodCell.textContent = food.name;
+          
+          // Claimed By
+          const claimedByCell = document.createElement('td');
+          claimedByCell.textContent = food.claimedBy || 'Anonymous';
+          
+          // Quantity
+          const quantityCell = document.createElement('td');
+          quantityCell.textContent = food.claimedQuantity || food.quantity;
+          
+          // Claim Date
+          const dateCell = document.createElement('td');
+          const claimDate = food.claimedAt ? new Date(food.claimedAt) : new Date();
+          dateCell.textContent = claimDate.toLocaleString();
+          
+          // Status
+          const statusCell = document.createElement('td');
+          statusCell.textContent = 'Completed';
+          
+          // Actions
+          const actionsCell = document.createElement('td');
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'action-btn delete-btn';
+          deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+          deleteBtn.onclick = () => confirmDeleteClaim(foodId, food.name);
+          
+          actionsCell.appendChild(deleteBtn);
+          
+          row.appendChild(idCell);
+          row.appendChild(foodCell);
+          row.appendChild(claimedByCell);
+          row.appendChild(quantityCell);
+          row.appendChild(dateCell);
+          row.appendChild(statusCell);
+          row.appendChild(actionsCell);
+          
+          claimsTable.appendChild(row);
+        });
+      });
+    }
+    
+    // Initialize stats chart
+    function initStatsChart() {
+      const ctx = document.getElementById('stats-chart').getContext('2d');
+      
+      // Sample data - you would replace this with actual data from Firebase
+      const chartData = {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        datasets: [
+          {
+            label: 'Food Donations',
+            data: [120, 190, 130, 170, 210, 180, 220, 240, 200, 230, 250, 280],
+            backgroundColor: 'rgba(76, 175, 80, 0.2)',
+            borderColor: 'rgba(76, 175, 80, 1)',
+            borderWidth: 1
+          },
+          {
+            label: 'Food Claims',
+            data: [90, 150, 120, 140, 180, 160, 200, 210, 180, 200, 220, 240],
+            backgroundColor: 'rgba(244, 67, 54, 0.2)',
+            borderColor: 'rgba(244, 67, 54, 1)',
+            borderWidth: 1
+          }
+        ]
+      };
+      
+      const chart = new Chart(ctx, {
+        type: 'bar',
+        data: chartData,
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+    
+    // Modal functions
+    function openAddUserModal() {
+      document.getElementById('add-user-modal').style.display = 'flex';
+    }
+    
+    function openEditUserModal(userId, user) {
+      document.getElementById('edit-user-id').value = userId;
+      document.getElementById('edit-user-name').value = user.displayName || '';
+      document.getElementById('edit-user-email').value = user.email || '';
+      document.getElementById('edit-user-role').value = user.role || 'user';
+      
+      document.getElementById('edit-user-modal').style.display = 'flex';
+    }
+    
+    function openAddFoodModal() {
+      document.getElementById('add-food-modal').style.display = 'flex';
+    }
+    
+    function openEditFoodModal(foodId, food) {
+      document.getElementById('edit-food-id').value = foodId;
+      document.getElementById('edit-food-name').value = food.name;
+      document.getElementById('edit-food-type').value = food.foodType || 'Cooked Meal';
+      document.getElementById('edit-food-quantity').value = food.quantity;
+      document.getElementById('edit-food-measurement').value = food.measurement || 'servings';
+      document.getElementById('edit-food-location').value = food.location;
+      
+      // Format date for datetime-local input
+      const expiryDate = food.expiry ? new Date(food.expiry) : new Date();
+      const formattedDate = expiryDate.toISOString().slice(0, 16);
+      document.getElementById('edit-food-expiry').value = formattedDate;
+      
+      document.getElementById('edit-food-description').value = food.description || '';
+      document.getElementById('edit-food-status').value = food.status || 'available';
+      
+      document.getElementById('edit-food-modal').style.display = 'flex';
+    }
+    
+    function confirmDeleteUser(userId, email) {
+      document.getElementById('confirm-title').textContent = 'Delete User';
+      document.getElementById('confirm-message').textContent = `Are you sure you want to delete user ${email}? This action cannot be undone.`;
+      
+      const confirmBtn = document.getElementById('confirm-action-btn');
+      confirmBtn.onclick = () => {
+        deleteUser(userId);
+        closeModal('confirm-modal');
+      };
+      
+      document.getElementById('confirm-modal').style.display = 'flex';
+    }
+    
+    function confirmDeleteFood(foodId, foodName) {
+      document.getElementById('confirm-title').textContent = 'Delete Food Post';
+      document.getElementById('confirm-message').textContent = `Are you sure you want to delete "${foodName}"? This action cannot be undone.`;
+      
+      const confirmBtn = document.getElementById('confirm-action-btn');
+      confirmBtn.onclick = () => {
+        deleteFoodPost(foodId);
+        closeModal('confirm-modal');
+      };
+      
+      document.getElementById('confirm-modal').style.display = 'flex';
+    }
+    
+    function confirmDeleteClaim(foodId, foodName) {
+      document.getElementById('confirm-title').textContent = 'Delete Claim';
+      document.getElementById('confirm-message').textContent = `Are you sure you want to delete the claim for "${foodName}"? This action cannot be undone.`;
+      
+      const confirmBtn = document.getElementById('confirm-action-btn');
+      confirmBtn.onclick = () => {
+        deleteClaim(foodId);
+        closeModal('confirm-modal');
+      };
+      
+      document.getElementById('confirm-modal').style.display = 'flex';
+    }
+    
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = 'none';
+    }
+    
+    // Close modals when clicking X or cancel button
+    document.querySelectorAll('.close-modal').forEach(btn => {
+      btn.addEventListener('click', function() {
+        this.closest('.modal').style.display = 'none';
+      });
+    });
+    
+    // Close modals when clicking outside
+    window.addEventListener('click', function(event) {
+      if (event.target.className === 'modal') {
+        event.target.style.display = 'none';
+      }
+    });
+    
+    // CRUD Operations
+    function addUser() {
+      const name = document.getElementById('user-name').value.trim();
+      const email = document.getElementById('user-email').value.trim();
+      const password = document.getElementById('user-password').value;
+      const role = document.getElementById('user-role').value;
+      
+      if (!name || !email || !password) {
+        alert('Please fill all required fields');
+        return;
+      }
+      
+      // In a real app, you would use Firebase Auth to create the user
+      // This is a simplified version that just adds to the database
+      const newUser = {
+        displayName: name,
+        email: email,
+        role: role,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Generate a simple user ID
+      const userId = 'user_' + Date.now();
+      
+      firebase.database().ref('users/' + userId).set(newUser)
+        .then(() => {
+          alert('User added successfully');
+          closeModal('add-user-modal');
+          document.getElementById('add-user-form').reset();
+        })
+        .catch(error => {
+          alert('Error adding user: ' + error.message);
+        });
+    }
+    
+    function updateUser() {
+      const userId = document.getElementById('edit-user-id').value;
+      const name = document.getElementById('edit-user-name').value.trim();
+      const email = document.getElementById('edit-user-email').value.trim();
+      const role = document.getElementById('edit-user-role').value;
+      
+      if (!userId || !name || !email) {
+        alert('Please fill all required fields');
+        return;
+      }
+      
+      const updates = {
+        displayName: name,
+        email: email,
+        role: role
+      };
+      
+      firebase.database().ref('users/' + userId).update(updates)
+        .then(() => {
+          alert('User updated successfully');
+          closeModal('edit-user-modal');
+        })
+        .catch(error => {
+          alert('Error updating user: ' + error.message);
+        });
+    }
+    
+    function deleteUser(userId) {
+      firebase.database().ref('users/' + userId).remove()
+        .then(() => {
+          alert('User deleted successfully');
+        })
+        .catch(error => {
+          alert('Error deleting user: ' + error.message);
+        });
+    }
+    
+    function addFoodPost() {
+      const name = document.getElementById('food-name').value.trim();
+      const type = document.getElementById('food-type').value;
+      const quantity = document.getElementById('food-quantity').value;
+      const measurement = document.getElementById('food-measurement').value;
+      const location = document.getElementById('food-location').value.trim();
+      const expiry = document.getElementById('food-expiry').value;
+      const description = document.getElementById('food-description').value;
+      const status = document.getElementById('food-status').value;
+      
+      if (!name || !quantity || !location || !expiry) {
+        alert('Please fill all required fields');
+        return;
+      }
+      
+      const newFood = {
+        name: name,
+        foodType: type,
+        quantity: parseInt(quantity),
+        measurement: measurement,
+        location: location,
+        expiry: expiry,
+        description: description,
+        status: status,
+        postedBy: 'admin',
+        postedByEmail: 'admin@zerowaste.com',
+        postedAt: new Date().toISOString(),
+        timestamp: Date.now()
+      };
+      
+      firebase.database().ref('food_posts').push(newFood)
+        .then(() => {
+          alert('Food post added successfully');
+          closeModal('add-food-modal');
+          document.getElementById('add-food-form').reset();
+        })
+        .catch(error => {
+          alert('Error adding food post: ' + error.message);
+        });
+    }
+    
+    function updateFoodPost() {
+      const foodId = document.getElementById('edit-food-id').value;
+      const name = document.getElementById('edit-food-name').value.trim();
+      const type = document.getElementById('edit-food-type').value;
+      const quantity = document.getElementById('edit-food-quantity').value;
+      const measurement = document.getElementById('edit-food-measurement').value;
+      const location = document.getElementById('edit-food-location').value.trim();
+      const expiry = document.getElementById('edit-food-expiry').value;
+      const description = document.getElementById('edit-food-description').value;
+      const status = document.getElementById('edit-food-status').value;
+      
+      if (!foodId || !name || !quantity || !location || !expiry) {
+        alert('Please fill all required fields');
+        return;
+      }
+      
+      const updates = {
+        name: name,
+        foodType: type,
+        quantity: parseInt(quantity),
+        measurement: measurement,
+        location: location,
+        expiry: expiry,
+        description: description,
+        status: status,
+        updatedAt: new Date().toISOString()
+      };
+      
+      firebase.database().ref('food_posts/' + foodId).update(updates)
+        .then(() => {
+          alert('Food post updated successfully');
+          closeModal('edit-food-modal');
+        })
+        .catch(error => {
+          alert('Error updating food post: ' + error.message);
+        });
+    }
+    
+    function deleteFoodPost(foodId) {
+      firebase.database().ref('food_posts/' + foodId).remove()
+        .then(() => {
+          alert('Food post deleted successfully');
+        })
+        .catch(error => {
+          alert('Error deleting food post: ' + error.message);
+        });
+    }
+    
+    function deleteClaim(foodId) {
+      // This would update the food post status back to available
+      // In a real app, you might want to keep a record of claims
+      firebase.database().ref('food_posts/' + foodId).update({
+        status: 'available',
+        claimedBy: null,
+        claimedAt: null,
+        claimedQuantity: null
+      })
+      .then(() => {
+        alert('Claim deleted successfully');
+      })
+      .catch(error => {
+        alert('Error deleting claim: ' + error.message);
+      });
+    }
+    
+    // Tab Navigation
+    document.querySelectorAll('.menu-item').forEach(item => {
+      item.addEventListener('click', function() {
+        // Update active tab
+        document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Update page title
+        const tabName = this.getAttribute('data-tab');
+        document.getElementById('page-title').textContent = tabName.charAt(0).toUpperCase() + tabName.slice(1);
+        
+        // Show correct tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.remove('active');
+        });
+        document.getElementById(tabName).classList.add('active');
+        
+        // Load data if needed
+        if (tabName === 'users') {
+          loadUsersTable();
+        } else if (tabName === 'food-posts') {
+          loadFoodPostsTable();
+        } else if (tabName === 'claims') {
+          loadClaimsTable();
+        } else if (tabName === 'reports') {
+          initStatsChart();
+        }
+      });
+    });
+    
+    // Subtabs for food posts
+    document.querySelectorAll('[data-subtab]').forEach(tab => {
+      tab.addEventListener('click', function() {
+        const subtabId = this.getAttribute('data-subtab');
+        
+        // Update active subtab
+        document.querySelectorAll('[data-subtab]').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Show correct subtab content
+        document.querySelectorAll('.subtab-content').forEach(content => {
+          content.classList.remove('active');
+        });
+        document.getElementById(subtabId).classList.add('active');
+      });
+    });
+    
+    // Toggle sidebar on mobile
+    document.querySelector('.toggle-sidebar').addEventListener('click', function() {
+      document.querySelector('.admin-sidebar').classList.toggle('active');
+    });
+    
+    // Event listeners for buttons
+    document.getElementById('add-user-btn').addEventListener('click', openAddUserModal);
+    document.getElementById('save-user-btn').addEventListener('click', addUser);
+    document.getElementById('update-user-btn').addEventListener('click', updateUser);
+    
+    document.getElementById('add-food-btn').addEventListener('click', openAddFoodModal);
+    document.getElementById('save-food-btn').addEventListener('click', addFoodPost);
+    document.getElementById('update-food-btn').addEventListener('click', updateFoodPost);
+  </script>
+</body>
+</html>
