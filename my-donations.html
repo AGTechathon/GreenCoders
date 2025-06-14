@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Donations - ZeroWaste</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+  <div class="wrapper">
+    <header class="main-header">
+      <div class="container">
+        <div class="logo">
+          <i class="fas fa-recycle"></i>
+          <h1>ZeroWaste</h1>
+        </div>
+        <nav class="main-nav">
+          <ul>
+            <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="post.html"><i class="fas fa-utensils"></i> Donate</a></li>
+            <li><a href="receive.html"><i class="fas fa-hands-helping"></i> Receive</a></li>
+            <li><a href="#" id="auth-link"><i class="fas fa-user"></i> <span>Login</span></a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <main class="container">
+      <div class="page-header">
+        <h2>My Donations</h2>
+        <p>All food donations you have posted</p>
+      </div>
+      <div id="donations-list" class="donations-grid"></div>
+    </main>
+    <footer class="main-footer">
+      <div class="container">
+        <p>&copy; 2025 ZeroWaste. Making the world greener, one meal at a time.</p>
+      </div>
+    </footer>
+  </div>
+  <script>
+    firebase.auth().onAuthStateChanged(user => {
+      const authLink = document.getElementById('auth-link');
+      const authText = authLink.querySelector('span');
+      if (user) {
+        authText.textContent = 'Logout';
+        authLink.onclick = () => firebase.auth().signOut().then(() => {
+          window.location.href = 'index.html';
+        });
+        loadAllUserDonations(user.uid);
+      } else {
+        authText.textContent = 'Login';
+        authLink.href = 'login.html';
+        authLink.onclick = null;
+        window.location.href = 'login.html?redirect=my-donations.html';
+      }
+    });
+
+    function loadAllUserDonations(userId) {
+      const donationsRef = firebase.database().ref('food_posts')
+        .orderByChild('postedBy')
+        .equalTo(userId);
+      const container = document.getElementById('donations-list');
+      container.innerHTML = '<div class="loading">Loading...</div>';
+      donationsRef.on('value', snapshot => {
+        container.innerHTML = '';
+        if (!snapshot.exists()) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-utensils"></i>
+              <p>You haven't posted any donations yet</p>
+            </div>
+          `;
+          return;
+        }
+        snapshot.forEach(child => {
+          const donation = child.val();
+          const donationCard = document.createElement('div');
+          donationCard.className = 'donation-card';
+          const statusClass = donation.status === 'claimed' ? 'claimed' : (donation.status === 'available' ? 'available' : 'pending');
+          const expiryDate = new Date(donation.expiry);
+          const timeLeft = getTimeLeft(expiryDate);
+          let verificationStatus = '';
+          if (donation.verificationStatus) {
+            verificationStatus = `
+              <div class="verification-status ${donation.verificationStatus}">
+                <i class="fas ${donation.verificationStatus === 'verified' ? 'fa-check-circle' : 'fa-clock'}"></i>
+                ${donation.verificationStatus === 'verified' ? 'Verified' : 'Pending Verification'}
+              </div>
+            `;
+          }
+          donationCard.innerHTML = `
+            <div class="donation-header">
+              <h4>${donation.name}</h4>
+              <span class="status-badge ${statusClass}">
+                ${donation.status}
+              </span>
+            </div>
+            ${verificationStatus}
+            <div class="donation-meta">
+              <span class="quantity">
+                <i class="fas fa-weight-hanging"></i>
+                ${donation.quantity} ${donation.measurement || 'servings'}
+              </span>
+              <span class="food-type">
+                <i class="fas fa-tag"></i>
+                ${donation.foodType || 'Food'}
+              </span>
+            </div>
+            <div class="donation-details">
+              <div class="detail">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>${donation.location}</span>
+              </div>
+              <div class="detail">
+                <i class="fas fa-clock"></i>
+                <span>Expires in ${timeLeft}</span>
+              </div>
+            </div>
+            ${donation.status === 'claimed' ? `
+              <div class="donation-footer claimed">
+                <i class="fas fa-check-circle"></i>
+                Claimed by ${donation.claimedBy || 'someone'}
+              </div>
+            ` : ''}
+          `;
+          container.appendChild(donationCard);
+        });
+      });
+    }
+    function getTimeLeft(expiryDate) {
+      const now = new Date();
+      const diffMs = expiryDate - now;
+      if (diffMs <= 0) return 'Expired';
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      if (diffHours < 24) return `${diffHours} hours`;
+      const diffDays = Math.floor(diffHours / 24);
+      return `${diffDays} days`;
+    }
+  </script>
+</body>
+</html> 
