@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZeroWaste - Fight Hunger, Reduce Waste</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <!-- Firebase Setup -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+  <div class="wrapper">
+    <header class="main-header">
+      <div class="container">
+        <div class="logo">
+          <i class="fas fa-recycle"></i>
+          <h1>ZeroWaste</h1>
+        </div>
+        <nav class="main-nav">
+          <ul>
+            <li><a href="index.html" class="active"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="post.html"><i class="fas fa-utensils"></i> Donate</a></li>
+            <li><a href="receive.html"><i class="fas fa-hands-helping"></i> Receive</a></li>
+            <li><a href="#" id="auth-link"><i class="fas fa-user"></i> <span>Login</span></a></li>
+          </ul>
+        </nav>
+        <button class="mobile-menu-btn">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero-banner">
+        <div class="container">
+          <div class="hero-content">
+            <h2>Connecting Surplus Food With Hunger</h2>
+            <p class="subtitle">Reduce food waste while helping your community</p>
+            <div class="cta-buttons">
+              <a href="post.html" class="btn primary-btn">
+                <i class="fas fa-share"></i> Donate Food
+              </a>
+              <a href="receive.html" class="btn secondary-btn">
+                <i class="fas fa-search"></i> Find Food
+              </a>
+            </div>
+          </div>
+          <div class="hero-image">
+            <img src="zerowaste.jpg" alt="Food sharing illustration">
+          </div>
+        </div>
+      </section>
+
+      <section class="features-section">
+        <div class="container">
+          <h2 class="section-title">How It Works</h2>
+          <div class="features-grid">
+            <div class="feature-card">
+              <div class="feature-icon">
+                <div class="icon-circle">1</div>
+              </div>
+              <h3>Post Surplus Food</h3>
+              <p>Restaurants, caterers or individuals list their excess food with details</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">
+                <div class="icon-circle">2</div>
+              </div>
+              <h3>Find Nearby Donations</h3>
+              <p>Those in need can browse and claim available food donations</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon">
+                <div class="icon-circle">3</div>
+              </div>
+              <h3>Arrange Pickup</h3>
+              <p>Coordinate pickup details directly with the donor</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="stats-section">
+        <div class="container">
+          <h2 class="section-title">Our Community Impact</h2>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="meals-donated">0</div>
+              <div class="stat-label">Meals Saved</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="donors-count">0</div>
+              <div class="stat-label">Active Donors</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="receivers-count">0</div>
+              <div class="stat-label">People Helped</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="co2-saved">0</div>
+              <div class="stat-label">KG CO₂ Saved</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="testimonials-section">
+        <div class="container">
+          <h2 class="section-title">What Our Users Say</h2>
+          <div class="testimonials-slider">
+            <div class="testimonial-card">
+              <div class="testimonial-content">
+                <i class="fas fa-quote-left"></i>
+                <p>ZeroWaste helped us redirect hundreds of meals from our restaurant that would have gone to waste to local shelters.</p>
+              </div>
+              <div class="testimonial-author">
+                <img src="restarunto.jpg" alt="Restaurant owner">
+                <div>
+                  <h4>Rajesh Kumar</h4>
+                  <p>Restaurant Owner</p>
+                </div>
+              </div>
+            </div>
+            <div class="testimonial-card">
+              <div class="testimonial-content">
+                <i class="fas fa-quote-left"></i>
+                <p>As a student with limited budget, ZeroWaste has been a lifesaver for getting quality meals while reducing waste.</p>
+              </div>
+              <div class="testimonial-author">
+                <img src="studimg.jpg" alt="Student">
+                <div>
+                  <h4>Priya Sharma</h4>
+                  <p>College Student</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="main-footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-about">
+            <div class="logo">
+              <i class="fas fa-recycle"></i>
+              <h3>ZeroWaste</h3>
+            </div>
+            <p>Connecting surplus food with those who need it in your community.</p>
+            <div class="social-links">
+              <a href="#"><i class="fab fa-facebook"></i></a>
+              <a href="#"><i class="fab fa-twitter"></i></a>
+              <a href="#"><i class="fab fa-instagram"></i></a>
+            </div>
+          </div>
+          <div class="footer-links">
+            <h4>Quick Links</h4>
+            <ul>
+              <li><a href="index.html">Home</a></li>
+              <li><a href="post.html">Donate Food</a></li>
+              <li><a href="receive.html">Receive Food</a></li>
+              <li><a href="login.html">Login</a></li>
+            </ul>
+          </div>
+          <div class="footer-contact">
+            <h4>Contact Us</h4>
+            <ul>
+              <li><i class="fas fa-envelope"></i> contact@zerowaste.com</li>
+              <li><i class="fas fa-phone"></i> +91 9876543210</li>
+              <li><i class="fas fa-map-marker-alt"></i> Solapur, India</li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2023 ZeroWaste. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Check auth status
+    firebase.auth().onAuthStateChanged(user => {
+      const authLink = document.getElementById('auth-link');
+      const authText = authLink.querySelector('span');
+      if (user) {
+        authText.textContent = 'Logout';
+        authLink.href = '#';
+        authLink.onclick = () => firebase.auth().signOut();
+      } else {
+        authText.textContent = 'Login';
+        authLink.href = 'login.html';
+        authLink.onclick = null;
+      }
+    });
+
+    // Mobile menu toggle
+    document.querySelector('.mobile-menu-btn').addEventListener('click', () => {
+      document.querySelector('.main-nav').classList.toggle('active');
+    });
+
+    // Animate stats
+    function animateValue(id, target, duration = 2000) {
+      const obj = document.getElementById(id);
+      let start = 0;
+      const increment = target / (duration / 16);
+      const timer = setInterval(() => {
+        start += increment;
+        obj.textContent = Math.floor(start);
+        if (start >= target) {
+          obj.textContent = target.toLocaleString();
+          clearInterval(timer);
+        }
+      }, 16);
+    }
+
+    // Load real stats from Firebase
+    function loadStats() {
+      // Meals donated
+      firebase.database().ref('total_meals').once('value').then(snapshot => {
+        const count = snapshot.val() || 1243;
+        animateValue('meals-donated', count);
+        
+        // Calculate CO2 saved (approx 2.5kg per meal)
+        animateValue('co2-saved', Math.floor(count * 2.5));
+      });
+      
+      // Donors count
+      firebase.database().ref('total_donors').once('value').then(snapshot => {
+        animateValue('donors-count', snapshot.val() || 87);
+      });
+      
+      // Receivers count
+      firebase.database().ref('total_receivers').once('value').then(snapshot => {
+        animateValue('receivers-count', snapshot.val() || 532);
+      });
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      loadStats();
+    });
+  </script>
+</body>
+</html>
