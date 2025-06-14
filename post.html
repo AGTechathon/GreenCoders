@@ -1,34 +1,639 @@
 <!DOCTYPE html>
-<html>
-<head><title>Post Food - ZeroWaste</title></head>
-<body>
-  <h2>Post Food</h2>
-  <input id="name" placeholder="Food name"><br>
-  <input id="location" placeholder="Location"><br>
-  <input id="quantity" type="number" placeholder="Quantity"><br>
-  <button onclick="postFood()">Post</button>
-
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Donate Food - ZeroWaste</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <!-- Firebase Setup -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="firebase-config.js"></script>
-  <script>
-    function postFood() {
-      const name = document.getElementById("name").value;
-      const location = document.getElementById("location").value;
-      const quantity = document.getElementById("quantity").value;
+</head>
+<body>
+  <div class="wrapper">
+    <header class="main-header">
+      <div class="container">
+        <div class="logo">
+          <i class="fas fa-recycle"></i>
+          <h1>ZeroWaste</h1>
+        </div>
+        <nav class="main-nav">
+          <ul>
+            <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+            <li><a href="post.html" class="active"><i class="fas fa-utensils"></i> Donate</a></li>
+            <li><a href="receive.html"><i class="fas fa-hands-helping"></i> Receive</a></li>
+            <li><a href="#" id="auth-link"><i class="fas fa-user"></i> <span>Login</span></a></li>
+          </ul>
+        </nav>
+        <button class="mobile-menu-btn">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+    </header>
 
-      firebase.database().ref("food_posts").push({
-        name: name,
-        location: location,
-        quantity: quantity,
-        time: new Date().toLocaleString()
-      }).then(() => {
-        alert("Posted!");
-        document.getElementById("name").value = "";
-        document.getElementById("location").value = "";
-        document.getElementById("quantity").value = "";
+    <main class="donation-page">
+      <div class="container">
+        <div class="page-header">
+          <h2>Donate Surplus Food</h2>
+          <p>Help reduce food waste by sharing your excess food with those in need</p>
+        </div>
+        
+        <div class="donation-layout">
+          <div class="donation-form-container">
+            <form id="food-form" class="donation-form">
+              <div class="form-section">
+                <h3><i class="fas fa-info-circle"></i> Food Details</h3>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="name">Food Item Name*</label>
+                    <input type="text" id="name" placeholder="e.g., Pizza, Fresh Fruits, Packaged Meals" required>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="food-type">Food Type*</label>
+                    <select id="food-type" required>
+                      <option value="">Select food type</option>
+                      <option value="Cooked Meal">Cooked Meal</option>
+                      <option value="Packaged Food">Packaged Food</option>
+                      <option value="Fruits/Veggies">Fruits/Veggies</option>
+                      <option value="Bakery Items">Bakery Items</option>
+                      <option value="Dairy">Dairy</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label for="description">Description</label>
+                  <textarea id="description" rows="3" placeholder="Ingredients, dietary info, special instructions"></textarea>
+                </div>
+              </div>
+              
+              <div class="form-section">
+                <h3><i class="fas fa-balance-scale"></i> Quantity</h3>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="quantity">Amount*</label>
+                    <input type="number" id="quantity" placeholder="Number of servings" min="1" required>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="measurement">Measurement*</label>
+                    <select id="measurement" required>
+                      <option value="servings">Servings</option>
+                      <option value="plates">Plates</option>
+                      <option value="kg">Kilograms</option>
+                      <option value="units">Units</option>
+                      <option value="packets">Packets</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="form-section">
+                <h3><i class="fas fa-map-marker-alt"></i> Location & Pickup</h3>
+                <div class="form-group">
+                  <label for="location">Pickup Location*</label>
+                  <input type="text" id="location" placeholder="Full address or nearby landmark" required>
+                </div>
+                
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="expiry">Expiry Date/Time*</label>
+                    <input type="datetime-local" id="expiry" required>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="contact">Contact Phone*</label>
+                    <input type="tel" id="contact" placeholder="Phone for pickup coordination" required>
+                  </div>
+                </div>
+                
+                <div class="form-group checkbox-group">
+                  <input type="checkbox" id="perishable" checked>
+                  <label for="perishable">This food is perishable</label>
+                </div>
+              </div>
+              
+              <div class="form-actions">
+                <button type="button" onclick="postFood()" class="btn primary-btn" id="submit-btn">
+                  <i class="fas fa-share"></i> Post Donation
+                </button>
+                <button type="reset" class="btn secondary-btn">
+                  <i class="fas fa-times"></i> Clear Form
+                </button>
+              </div>
+            </form>
+          </div>
+          <div class="donation-right-column">
+            <div class="donation-guidelines">
+              <h3><i class="fas fa-lightbulb"></i> Donation Guidelines</h3>
+              <div class="guidelines-list">
+                <div class="guideline-item">
+                  <div class="guideline-icon">
+                    <i class="fas fa-check-circle"></i>
+                  </div>
+                  <p>Only post food that is safe for consumption</p>
+                </div>
+                <div class="guideline-item">
+                  <div class="guideline-icon">
+                    <i class="fas fa-check-circle"></i>
+                  </div>
+                  <p>Provide accurate expiry information</p>
+                </div>
+                <div class="guideline-item">
+                  <div class="guideline-icon">
+                    <i class="fas fa-check-circle"></i>
+                  </div>
+                  <p>Be specific about quantity and packaging</p>
+                </div>
+                <div class="guideline-item">
+                  <div class="guideline-icon">
+                    <i class="fas fa-check-circle"></i>
+                  </div>
+                  <p>Include any dietary information (vegetarian, gluten-free, etc.)</p>
+                </div>
+                <div class="guideline-item">
+                  <div class="guideline-icon">
+                    <i class="fas fa-check-circle"></i>
+                  </div>
+                  <p>Be available for the specified pickup time</p>
+                </div>
+              </div>
+              <div class="impact-meter">
+                <h4>Your Impact</h4>
+                <div class="meter-content">
+                  <div class="meter-icon">
+                    <i class="fas fa-leaf"></i>
+                  </div>
+                  <p>Each meal donated saves approximately <strong>2.5kg</strong> of CO₂ emissions</p>
+                </div>
+              </div>
+            </div>
+            <section class="my-donations donation-guidelines" id="my-donations">
+              <div class="section-header">
+                <h3><i class="fas fa-history"></i> My Recent Donations</h3>
+                <a href="#" class="view-all">View All</a>
+              </div>
+              <div id="donations-list" class="donations-grid donations-scrollable"></div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="main-footer">
+      <div class="container">
+        <p>&copy; 2023 ZeroWaste. Making the world greener, one meal at a time.</p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // Check authentication state
+    firebase.auth().onAuthStateChanged(user => {
+      const authLink = document.getElementById('auth-link');
+      const authText = authLink.querySelector('span');
+      
+      if (user) {
+        authText.textContent = 'Logout';
+        authLink.onclick = () => firebase.auth().signOut().then(() => {
+          window.location.href = 'index.html';
+        });
+        loadUserDonations(user.uid);
+        document.getElementById('my-donations').style.display = 'block';
+      } else {
+        authText.textContent = 'Login';
+        authLink.href = 'login.html';
+        authLink.onclick = null;
+        document.getElementById('my-donations').style.display = 'none';
+        window.location.href = 'login.html?redirect=post.html';
+      }
+    });
+
+    // Mobile menu toggle
+    document.querySelector('.mobile-menu-btn').addEventListener('click', () => {
+      document.querySelector('.main-nav').classList.toggle('active');
+    });
+
+    // Load user's previous donations
+    function loadUserDonations(userId) {
+      const donationsRef = firebase.database().ref('food_posts')
+        .orderByChild('postedBy')
+        .equalTo(userId)
+        .limitToLast(3);
+      
+      donationsRef.on('value', snapshot => {
+        const container = document.getElementById('donations-list');
+        container.innerHTML = '';
+        
+        if (!snapshot.exists()) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-utensils"></i>
+              <p>You haven't posted any donations yet</p>
+            </div>
+          `;
+          return;
+        }
+
+        snapshot.forEach(child => {
+          const donation = child.val();
+          const donationCard = document.createElement('div');
+          donationCard.className = 'donation-card';
+          
+          const statusClass = donation.status === 'claimed' ? 'claimed' : 'available';
+          const expiryDate = new Date(donation.expiry);
+          const timeLeft = getTimeLeft(expiryDate);
+          
+          donationCard.innerHTML = `
+            <div class="donation-header">
+              <h4>${donation.name}</h4>
+              <span class="status-badge ${statusClass}">
+                ${donation.status}
+              </span>
+            </div>
+            <div class="donation-meta">
+              <span class="quantity">
+                <i class="fas fa-weight-hanging"></i>
+                ${donation.quantity} ${donation.measurement || 'servings'}
+              </span>
+              <span class="food-type">
+                <i class="fas fa-tag"></i>
+                ${donation.foodType || 'Food'}
+              </span>
+            </div>
+            <div class="donation-details">
+              <div class="detail">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>${donation.location}</span>
+              </div>
+              <div class="detail">
+                <i class="fas fa-clock"></i>
+                <span>Expires in ${timeLeft}</span>
+              </div>
+            </div>
+            ${donation.status === 'claimed' ? `
+              <div class="donation-footer claimed">
+                <i class="fas fa-check-circle"></i>
+                Claimed by ${donation.claimedBy || 'someone'}
+              </div>
+            ` : ''}
+          `;
+          
+          container.appendChild(donationCard);
+        });
       });
     }
+
+    // Helper function to get time left
+    function getTimeLeft(expiryDate) {
+      const now = new Date();
+      const diffMs = expiryDate - now;
+      
+      if (diffMs <= 0) return 'Expired';
+      
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      if (diffHours < 24) return `${diffHours} hours`;
+      
+      const diffDays = Math.floor(diffHours / 24);
+      return `${diffDays} days`;
+    }
+
+    // Post food donation
+    function postFood() {
+      const user = firebase.auth().currentUser;
+      if (!user) {
+        alert('Please login to post food donations');
+        window.location.href = 'login.html?redirect=post.html';
+        return;
+      }
+
+      // Get form values
+      const name = document.getElementById('name').value;
+      const foodType = document.getElementById('food-type').value;
+      const description = document.getElementById('description').value;
+      const quantity = document.getElementById('quantity').value;
+      const measurement = document.getElementById('measurement').value;
+      const location = document.getElementById('location').value;
+      const expiry = document.getElementById('expiry').value;
+      const contact = document.getElementById('contact').value;
+      const perishable = document.getElementById('perishable').checked;
+
+      // Validate required fields
+      if (!name || !foodType || !quantity || !location || !expiry || !contact) {
+        showAlert('Please fill all required fields (marked with *)', 'error');
+        return;
+      }
+
+      // Prepare donation data
+      const donationData = {
+        name: name,
+        foodType: foodType,
+        description: description,
+        quantity: quantity,
+        measurement: measurement,
+        location: location,
+        expiry: expiry,
+        contact: contact,
+        perishable: perishable,
+        postedBy: user.uid,
+        postedByEmail: user.email,
+        postedAt: new Date().toISOString(),
+        status: 'available'
+      };
+
+      // Show loading state
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
+
+      // Save to Firebase
+      firebase.database().ref('food_posts').push(donationData)
+        .then(() => {
+          // Update stats
+          updateDonationStats(quantity);
+          
+          // Reset form
+          document.getElementById('food-form').reset();
+          
+          // Show success
+          showAlert('Donation posted successfully!', 'success');
+          submitBtn.innerHTML = '<i class="fas fa-check"></i> Posted!';
+          
+          // Refresh donations list
+          loadUserDonations(user.uid);
+          
+          // Reset button after delay
+          setTimeout(() => {
+            submitBtn.innerHTML = '<i class="fas fa-share"></i> Post Donation';
+            submitBtn.disabled = false;
+          }, 2000);
+        })
+        .catch(error => {
+          showAlert('Error posting donation: ' + error.message, 'error');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<i class="fas fa-share"></i> Post Donation';
+        });
+    }
+    
+    // Update donation stats
+    function updateDonationStats(quantity) {
+      // Update total meals donated
+      const mealsRef = firebase.database().ref('total_meals');
+      mealsRef.transaction(current => (current || 0) + parseInt(quantity));
+      
+      // Update total donors (if first donation)
+      const user = firebase.auth().currentUser;
+      const userRef = firebase.database().ref(`users/${user.uid}`);
+      
+      userRef.once('value').then(snapshot => {
+        if (!snapshot.exists() || !snapshot.val().hasDonated) {
+          const donorsRef = firebase.database().ref('total_donors');
+          donorsRef.transaction(current => (current || 0) + 1);
+          
+          // Mark user as donor
+          userRef.update({ hasDonated: true });
+        }
+      });
+    }
+    
+    // Show alert message
+    function showAlert(message, type) {
+      const alertBox = document.createElement('div');
+      alertBox.className = `alert-box ${type}`;
+      alertBox.innerHTML = `
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()">
+          <i class="fas fa-times"></i>
+        </button>
+      `;
+      
+      document.querySelector('.page-header').after(alertBox);
+      setTimeout(() => alertBox.remove(), 5000);
+    }            
   </script>
+ <style>
+.donation-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 20px;
+  align-items: stretch;
+  min-height: 600px;
+  padding: 10px 0;
+}
+
+.donation-form-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  height: 100%;
+}
+
+.donation-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+}
+
+.donation-guidelines {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  margin-bottom: 0;
+}
+
+.my-donations {
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  height: 550px;
+  display: flex;
+  flex-direction: column;
+  margin-top: 0;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.view-all {
+  color: #4CAF50;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.view-all:hover {
+  color: #388E3C;
+}
+
+.donations-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 10px;
+  margin-top: 10px;
+  height: calc(100% - 60px);
+}
+
+.donations-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 10px;
+  height: 100%;
+}
+
+.donation-card {
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #eee;
+  width: 100%;
+  box-sizing: border-box;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  max-width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
+}
+
+.donation-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+.donation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.donation-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.status-badge.available {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.claimed {
+  background: #f5f5f5;
+  color: #616161;
+}
+
+.donation-meta {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.donation-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.detail {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.detail i {
+  color: #4CAF50;
+  width: 16px;
+}
+
+.donations-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.donations-scrollable::-webkit-scrollbar-thumb {
+  background: #b2dfdb;
+  border-radius: 4px;
+}
+
+.donations-scrollable::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+.donations-scrollable {
+  overflow-x: hidden;
+}
+
+
+@media (max-width: 768px) {
+  .donation-layout {
+    grid-template-columns: 1fr;
+    padding: 10px 0;
+  }
+  
+  .donation-right-column {
+    margin-top: 15px;
+  }
+  .my-donations {
+  display: flex;
+  flex-direction: column;
+  height: 550px; /* FIXED HEIGHT */
+  max-height: 100%;
+  overflow: hidden;
+}
+
+
+.donations-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 10px;
+  margin-top: 10px;
+}
+
+
+.donation-card {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+}
+</style>
 </body>
 </html>
