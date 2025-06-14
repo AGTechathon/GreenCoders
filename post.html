@@ -176,7 +176,7 @@
             <section class="my-donations donation-guidelines" id="my-donations">
               <div class="section-header">
                 <h3><i class="fas fa-history"></i> My Recent Donations</h3>
-                <a href="#" class="view-all">View All</a>
+                <a href="my-donations.html" class="view-all">View All</a>
               </div>
               <div id="donations-list" class="donations-grid donations-scrollable"></div>
             </section>
@@ -213,6 +213,67 @@
         window.location.href = 'login.html?redirect=post.html';
       }
     });
+   function submitFoodPost() {
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    alert("Please log in first.");
+    return;
+  }
+
+  const name = document.getElementById('food-name').value.trim();
+  const quantity = parseInt(document.getElementById('food-quantity').value);
+  const location = document.getElementById('food-location').value.trim();
+
+  if (!name || !location || isNaN(quantity) || quantity <= 0) {
+    alert("Please enter valid food name, quantity and location.");
+    return;
+  }
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayTimestamp = todayStart.getTime();
+
+  const userId = user.uid;
+  const foodRef = firebase.database().ref("food_posts");
+
+  // Step 1: Load posts of this user
+  foodRef.orderByChild("userId").equalTo(userId).once("value").then(snapshot => {
+    let todayPostCount = 0;
+
+    snapshot.forEach(child => {
+      const post = child.val();
+      if (post.timestamp && post.timestamp >= todayTimestamp) {
+        todayPostCount++;
+      }
+    });
+
+    if (todayPostCount >= 2) {
+      alert("❌ Limit reached. You can post only 2 times per day.");
+      return;
+    }
+
+    // Step 2: Post is allowed, push new post
+    const newPost = {
+      name: name,
+      quantity: quantity,
+      location: location,
+      userId: userId,
+      timestamp: Date.now(),
+      status: "available"
+    };
+
+    foodRef.push(newPost).then(() => {
+      alert("✅ Post added!");
+      document.getElementById('food-name').value = '';
+      document.getElementById('food-quantity').value = '';
+      document.getElementById('food-location').value = '';
+    }).catch(error => {
+      console.error("Error posting:", error);
+      alert("Something went wrong.");
+    });
+  });
+}
+
 
     // Mobile menu toggle
     document.querySelector('.mobile-menu-btn').addEventListener('click', () => {
@@ -304,81 +365,98 @@
     }
 
     // Post food donation
-    function postFood() {
-      const user = firebase.auth().currentUser;
-      if (!user) {
-        alert('Please login to post food donations');
-        window.location.href = 'login.html?redirect=post.html';
-        return;
+function postFood() {
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    alert("Please login to post food donations");
+    window.location.href = 'login.html?redirect=post.html';
+    return;
+  }
+
+  const name = document.getElementById('name').value.trim();
+  const foodType = document.getElementById('food-type').value;
+  const description = document.getElementById('description').value;
+  const quantity = parseInt(document.getElementById('quantity').value);
+  const measurement = document.getElementById('measurement').value;
+  const location = document.getElementById('location').value;
+  const expiry = document.getElementById('expiry').value;
+  const contact = document.getElementById('contact').value;
+  const perishable = document.getElementById('perishable').checked;
+
+  if (!name || !foodType || !quantity || !location || !expiry || !contact) {
+    alert("Please fill all required fields (marked with *)");
+    return;
+  }
+
+  const userId = user.uid;
+  const foodRef = firebase.database().ref("food_posts");
+
+  // ✅ Set today's start and end timestamp
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const todayEnd = todayStart + 86400000;
+
+  // ✅ STEP 1: Count today's posts for this user
+  foodRef.orderByChild("postedBy").equalTo(userId).once("value").then(snapshot => {
+    let postCountToday = 0;
+
+    snapshot.forEach(child => {
+      const post = child.val();
+
+      if (
+        typeof post.timestamp === "number" &&
+        post.timestamp >= todayStart &&
+        post.timestamp < todayEnd
+      ) {
+        postCountToday++;
       }
+    });
 
-      // Get form values
-      const name = document.getElementById('name').value;
-      const foodType = document.getElementById('food-type').value;
-      const description = document.getElementById('description').value;
-      const quantity = document.getElementById('quantity').value;
-      const measurement = document.getElementById('measurement').value;
-      const location = document.getElementById('location').value;
-      const expiry = document.getElementById('expiry').value;
-      const contact = document.getElementById('contact').value;
-      const perishable = document.getElementById('perishable').checked;
-
-      // Validate required fields
-      if (!name || !foodType || !quantity || !location || !expiry || !contact) {
-        showAlert('Please fill all required fields (marked with *)', 'error');
-        return;
-      }
-
-      // Prepare donation data
-      const donationData = {
-        name: name,
-        foodType: foodType,
-        description: description,
-        quantity: quantity,
-        measurement: measurement,
-        location: location,
-        expiry: expiry,
-        contact: contact,
-        perishable: perishable,
-        postedBy: user.uid,
-        postedByEmail: user.email,
-        postedAt: new Date().toISOString(),
-        status: 'available'
-      };
-
-      // Show loading state
-      const submitBtn = document.getElementById('submit-btn');
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
-
-      // Save to Firebase
-      firebase.database().ref('food_posts').push(donationData)
-        .then(() => {
-          // Update stats
-          updateDonationStats(quantity);
-          
-          // Reset form
-          document.getElementById('food-form').reset();
-          
-          // Show success
-          showAlert('Donation posted successfully!', 'success');
-          submitBtn.innerHTML = '<i class="fas fa-check"></i> Posted!';
-          
-          // Refresh donations list
-          loadUserDonations(user.uid);
-          
-          // Reset button after delay
-          setTimeout(() => {
-            submitBtn.innerHTML = '<i class="fas fa-share"></i> Post Donation';
-            submitBtn.disabled = false;
-          }, 2000);
-        })
-        .catch(error => {
-          showAlert('Error posting donation: ' + error.message, 'error');
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<i class="fas fa-share"></i> Post Donation';
-        });
+    // ✅ STEP 2: Block if limit reached
+    if (postCountToday >= 2) {
+      alert("❌ You can only post 2 times per day.");
+      return;
     }
+
+    // ✅ STEP 3: Push the new post
+    const donationData = {
+      name,
+      foodType,
+      description,
+      quantity,
+      measurement,
+      location,
+      expiry,
+      contact,
+      perishable,
+      postedBy: user.uid,
+      postedByEmail: user.email,
+      postedAt: new Date().toISOString(),
+      timestamp: Date.now(), // ✅ Required for filtering
+      status: 'available'
+    };
+
+    const submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
+
+    foodRef.push(donationData)
+      .then(() => {
+        alert('✅ Donation posted successfully!');
+        document.getElementById('food-form').reset();
+        submitBtn.innerHTML = '<i class="fas fa-check"></i> Posted!';
+        submitBtn.disabled = false;
+      })
+      .catch(error => {
+        alert('❌ Error posting donation: ' + error.message);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-share"></i> Post Donation';
+      });
+  });
+}
+
+
+
     
     // Update donation stats
     function updateDonationStats(quantity) {
