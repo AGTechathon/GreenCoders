@@ -108,7 +108,8 @@
                   
                   <div class="form-group">
                     <label for="contact">Contact Phone*</label>
-                    <input type="tel" id="contact" placeholder="Phone for pickup coordination" required>
+                    <input type="tel" id="contact" maxlength="10" pattern="[0-9]{10}" required>
+
                   </div>
                 </div>
                 
@@ -713,5 +714,17 @@ function postFood() {
 
 }
 </style>
+<script>
+  document.getElementById('quantity').addEventListener('input', function (e) {
+    this.value = this.value.replace(/[^0-9]/g, '');
+  });
+  document.getElementById('contact').addEventListener('input', function (e) {
+    this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+  });
+  document.getElementById('name').addEventListener('input', function (e) {
+    this.value = this.value.replace(/[0-9]/g, '');
+  });
+</script>
+
 </body>
 </html>
