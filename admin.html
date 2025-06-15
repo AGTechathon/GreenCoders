@@ -522,6 +522,31 @@
     .tab-content.active {
       display: block;
     }
+    .search-input {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 0.9rem;
+}
+.status-pending {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.status-resolved {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-under_review {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.card-icon.reports {
+  background-color: #9c27b0;
+}
+
   </style>
 </head>
 <body>
@@ -572,7 +597,12 @@
         <div class="menu-item" data-tab="reports">
           <i class="fas fa-chart-bar"></i>
           <span>Reports</span>
+
         </div>
+        <div class="menu-item" data-tab="reported-posts">
+  <i class="fas fa-flag"></i>
+  <span>Reported Posts</span>
+</div>
       </div>
     </div>
 
@@ -646,7 +676,21 @@
                 <i class="fas fa-arrow-right"></i>
               </div>
             </div>
-            
+                            <div class="card">
+                <div class="card-header">
+                  <div>
+                    <div class="card-title">Pending Reports</div>
+                    <div class="card-value" id="total-reports">0</div>
+                  </div>
+                  <div class="card-icon reports">
+                    <i class="fas fa-flag"></i>
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <span>View All</span>
+                  <i class="fas fa-arrow-right"></i>
+                </div>
+              </div>
             <div class="card">
               <div class="card-header">
                 <div>
@@ -688,13 +732,14 @@
         <div id="users" class="tab-content">
           <div class="data-table">
             <div class="table-header">
-              <div class="table-title">All Users</div>
-              <div class="table-actions">
-                <button class="btn btn-primary" id="add-user-btn">
-                  <i class="fas fa-plus"></i> Add User
-                </button>
-              </div>
-            </div>
+  <div class="table-title">All Food Posts</div>
+  <div class="table-actions">
+   
+    <button class="btn btn-primary" id="add-food-btn">
+      <i class="fas fa-plus"></i> Add Food
+    </button>
+  </div>
+</div>
             <table>
               <thead>
                 <tr>
@@ -720,17 +765,18 @@
             <div class="tab active" data-subtab="all-posts">All Posts</div>
             <div class="tab" data-subtab="available">Available</div>
             <div class="tab" data-subtab="claimed">Claimed</div>
-          </div>
-          
+          </div>          
           <div id="all-posts" class="subtab-content active">
             <div class="data-table">
               <div class="table-header">
                 <div class="table-title">All Food Posts</div>
                 <div class="table-actions">
-                  <button class="btn btn-primary" id="add-food-btn">
-                    <i class="fas fa-plus"></i> Add Food
-                  </button>
-                </div>
+   <input type="text" id="search-food-posts" placeholder="Search food..." style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+  <button class="btn btn-primary" id="add-food-btn">
+    <i class="fas fa-plus"></i> Add Food
+  </button>
+</div>
+
               </div>
               <table>
                 <thead>
@@ -826,7 +872,30 @@
             </table>
           </div>
         </div>
-        
+        <!-- Reported Posts Tab -->
+<div id="reported-posts" class="tab-content">
+  <div class="data-table">
+    <div class="table-header">
+      <div class="table-title">Reported Food Posts</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Post ID</th>
+          <th>Food Name</th>
+          <th>Reported By</th>
+          <th>Reason</th>
+          <th>Details</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="reported-posts-table">
+        <!-- Will be populated by JavaScript -->
+      </tbody>
+    </table>
+  </div>
+</div>
         <!-- Reports Tab -->
         <div id="reports" class="tab-content">
           <div class="dashboard-cards">
@@ -1040,7 +1109,48 @@
       </div>
     </div>
   </div>
-
+<!-- View Post Modal -->
+<div id="view-post-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-title" id="view-post-title">Food Post Details</div>
+      <div class="close-modal">&times;</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Food Type:</label>
+        <div id="view-post-type"></div>
+      </div>
+      <div class="form-group">
+        <label>Quantity:</label>
+        <div id="view-post-quantity"></div>
+      </div>
+      <div class="form-group">
+        <label>Location:</label>
+        <div id="view-post-location"></div>
+      </div>
+      <div class="form-group">
+        <label>Expiry:</label>
+        <div id="view-post-expiry"></div>
+      </div>
+      <div class="form-group">
+        <label>Description:</label>
+        <div id="view-post-description"></div>
+      </div>
+      <div class="form-group">
+        <label>Status:</label>
+        <div id="view-post-status"></div>
+      </div>
+      <div class="form-group">
+        <label>Posted By:</label>
+        <div id="view-post-posted-by"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger close-modal">Close</button>
+    </div>
+  </div>
+</div>
   <!-- Edit Food Modal -->
   <div id="edit-food-modal" class="modal">
     <div class="modal-content">
@@ -1196,6 +1306,14 @@
       firebase.database().ref('users').once('value').then(snapshot => {
         const userCount = snapshot.numChildren();
         document.getElementById('total-users').textContent = userCount;
+        // In the loadDashboardData() function
+firebase.database().ref('reports').once('value').then(snapshot => {
+  let reportCount = 0;
+  snapshot.forEach(postSnapshot => {
+    reportCount += postSnapshot.numChildren();
+  });
+  document.getElementById('total-reports').textContent = reportCount;
+});
       });
       
       // Load total food posts
@@ -1214,7 +1332,16 @@
         const co2Saved = donations * 2.5;
         document.getElementById('total-co2').textContent = co2Saved.toLocaleString();
       });
-      
+       document.getElementById('search-food-posts').addEventListener('keyup', function () {
+  const filter = this.value.toLowerCase();
+  const rows = document.querySelectorAll('#food-posts-table tr');
+
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(filter) ? '' : 'none';
+  });
+});
+
       // Load total claims
       firebase.database().ref('claims').once('value').then(snapshot => {
         let claimCount = 0;
@@ -1253,7 +1380,9 @@
       // Initialize chart
       initStatsChart();
     }
-    
+    // Food-posts sub-tab switcher
+
+
     // Load recent activity
     function loadRecentActivity() {
       const activityRef = firebase.database().ref('food_posts').orderByChild('timestamp').limitToLast(5);
@@ -1370,7 +1499,24 @@
         });
       });
     }
-    
+    // Add this to ensure modals work properly
+function showModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // prevent scrolling
+  } else {
+    console.error('Modal not found:', modalId);
+  }
+}
+
+function hideModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = ''; // restore scrolling
+  }
+}
     // Load food posts table
     function loadFoodPostsTable() {
       const foodRef = firebase.database().ref('food_posts');
@@ -1460,6 +1606,35 @@
           if (food.status === 'claimed') {
             const claimedRow = row.cloneNode(true);
             claimedTable.appendChild(claimedRow);
+            document.getElementById('search-food-posts').addEventListener('input', function () {
+  const filter = this.value.toLowerCase();
+  const rows = document.querySelectorAll('#food-posts-table tr');
+
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(filter) ? '' : 'none';
+  });
+  // Add this in your loadFoodPostsTable() function, after creating the tables
+function setupFoodSearch() {
+  const searchInput = document.querySelector('#food-posts .search-input');
+  
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      const filter = this.value.toLowerCase();
+      const rows = document.querySelectorAll('#food-posts-table tbody tr');
+      
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+      });
+    });
+  }
+}
+
+
+// Call this function at the end of loadFoodPostsTable()
+setupFoodSearch();
+});
           } else {
             const availableRow = row.cloneNode(true);
             // Remove status cell for available table
@@ -1469,7 +1644,16 @@
         });
       });
     }
-    
+    document.getElementById('search-food-posts').addEventListener('input', function () {
+  const filter = this.value.toLowerCase();
+  const rows = document.querySelectorAll('#food-posts-table tr');
+
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(filter) ? '' : 'none';
+  });
+});
+
     // Load claims table
     function loadClaimsTable() {
       // This is a simplified implementation - you might need to adjust based on your data structure
@@ -1874,7 +2058,199 @@
           loadClaimsTable();
         } else if (tabName === 'reports') {
           initStatsChart();
-        }
+        }else if (tabName === 'reported-posts') {
+  loadReportedPosts();
+}
+
+// Add this function to load reported posts
+function loadReportedPosts() {
+  const reportsRef = firebase.database().ref('reports');
+  
+  reportsRef.on('value', snapshot => {
+    const table = document.getElementById('reported-posts-table');
+    table.innerHTML = '';
+    
+    if (!snapshot.exists()) {
+      table.innerHTML = '<tr><td colspan="7">No reported posts found</td></tr>';
+      return;
+    }
+    
+    snapshot.forEach(postSnapshot => {
+      postSnapshot.forEach(reportSnapshot => {
+        const report = reportSnapshot.val();
+        const reportId = reportSnapshot.key;
+        const postId = postSnapshot.key;
+        
+        const row = document.createElement('tr');
+        
+        // Post ID
+        const postIdCell = document.createElement('td');
+        postIdCell.textContent = postId.substring(0, 8) + '...';
+        
+        // Food Name
+        const foodNameCell = document.createElement('td');
+        // We'll get this from the food_posts reference
+        firebase.database().ref('food_posts/' + postId).once('value').then(foodSnapshot => {
+          if (foodSnapshot.exists()) {
+            foodNameCell.textContent = foodSnapshot.val().name || 'Unknown';
+          } else {
+            foodNameCell.textContent = 'Post deleted';
+          }
+        });
+        
+        // Reported By
+        const reportedByCell = document.createElement('td');
+        reportedByCell.textContent = report.reportedByEmail || 'Anonymous';
+        
+        // Reason
+        const reasonCell = document.createElement('td');
+        reasonCell.textContent = report.reason || 'No reason provided';
+        
+        // Details
+        const detailsCell = document.createElement('td');
+        detailsCell.textContent = report.details || 'No details';
+        
+        // Status
+        const statusCell = document.createElement('td');
+        const statusBadge = document.createElement('span');
+        statusBadge.className = `status-badge status-${report.status || 'pending'}`;
+        statusBadge.textContent = report.status || 'pending';
+        statusCell.appendChild(statusBadge);
+        
+        // Actions
+        const actionsCell = document.createElement('td');
+        actionsCell.style.whiteSpace = 'nowrap';
+        
+        // View Post button
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'action-btn edit-btn';
+        viewBtn.innerHTML = '<i class="fas fa-eye"></i> View';
+        viewBtn.onclick = () => {
+          // You'll need to implement this function to show post details
+          viewReportedPost(postId);
+        };
+        
+        // Resolve button
+        const resolveBtn = document.createElement('button');
+        resolveBtn.className = 'action-btn edit-btn';
+        resolveBtn.innerHTML = '<i class="fas fa-check"></i> Resolve';
+        resolveBtn.onclick = () => {
+          resolveReport(postId, reportId);
+        };
+        
+        // Delete Post button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'action-btn delete-btn';
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+        deleteBtn.onclick = () => {
+          confirmDeletePost(postId, reportId);
+        };
+        
+        // Block User button
+        const blockBtn = document.createElement('button');
+        blockBtn.className = 'action-btn delete-btn';
+        blockBtn.innerHTML = '<i class="fas fa-ban"></i> Block';
+        blockBtn.onclick = () => {
+          // Get the post creator's user ID to block them
+          firebase.database().ref('food_posts/' + postId).once('value').then(foodSnapshot => {
+            if (foodSnapshot.exists()) {
+              const postedBy = foodSnapshot.val().postedBy;
+              confirmBlockUser(postedBy);
+            }
+          });
+        };
+        
+        actionsCell.appendChild(viewBtn);
+        actionsCell.appendChild(resolveBtn);
+        actionsCell.appendChild(deleteBtn);
+        actionsCell.appendChild(blockBtn);
+        
+        row.appendChild(postIdCell);
+        row.appendChild(foodNameCell);
+        row.appendChild(reportedByCell);
+        row.appendChild(reasonCell);
+        row.appendChild(detailsCell);
+        row.appendChild(statusCell);
+        row.appendChild(actionsCell);
+        
+        table.appendChild(row);
+      });
+    });
+  });
+}
+
+// Add these helper functions
+function resolveReport(postId, reportId) {
+  firebase.database().ref(`reports/${postId}/${reportId}`).update({
+    status: 'resolved',
+    resolvedAt: new Date().toISOString(),
+    resolvedBy: 'admin'
+  }).then(() => {
+    alert('Report marked as resolved');
+  }).catch(error => {
+    alert('Error resolving report: ' + error.message);
+  });
+}
+
+function confirmDeletePost(postId, reportId) {
+  document.getElementById('confirm-title').textContent = 'Delete Food Post';
+  document.getElementById('confirm-message').textContent = 'Are you sure you want to delete this food post? This action cannot be undone.';
+  
+  const confirmBtn = document.getElementById('confirm-action-btn');
+  confirmBtn.onclick = () => {
+    deleteFoodPost(postId);
+    if (reportId) {
+      resolveReport(postId, reportId);
+    }
+    closeModal('confirm-modal');
+  };
+  
+  document.getElementById('confirm-modal').style.display = 'flex';
+}
+
+function confirmBlockUser(userId) {
+  document.getElementById('confirm-title').textContent = 'Block User';
+  document.getElementById('confirm-message').textContent = 'Are you sure you want to block this user? They will no longer be able to post food.';
+  
+  const confirmBtn = document.getElementById('confirm-action-btn');
+  confirmBtn.onclick = () => {
+    blockUser(userId);
+    closeModal('confirm-modal');
+  };
+  
+  document.getElementById('confirm-modal').style.display = 'flex';
+}
+
+function blockUser(userId) {
+  firebase.database().ref('users/' + userId).update({
+    isBlocked: true,
+    blockedAt: new Date().toISOString(),
+    blockedBy: 'admin'
+  }).then(() => {
+    alert('User blocked successfully');
+  }).catch(error => {
+    alert('Error blocking user: ' + error.message);
+  });
+}
+
+function viewReportedPost(postId) {
+  // Implement this function to show post details in a modal
+  firebase.database().ref('food_posts/' + postId).once('value').then(snapshot => {
+    const food = snapshot.val();
+    
+    // Populate a modal with food details
+    document.getElementById('view-post-title').textContent = food.name;
+    document.getElementById('view-post-type').textContent = food.foodType || 'Unknown';
+    document.getElementById('view-post-quantity').textContent = `${food.quantity} ${food.measurement || 'servings'}`;
+    document.getElementById('view-post-location').textContent = food.location;
+    document.getElementById('view-post-expiry').textContent = new Date(food.expiry).toLocaleString();
+    document.getElementById('view-post-description').textContent = food.description || 'No description';
+    document.getElementById('view-post-status').textContent = food.status || 'available';
+    document.getElementById('view-post-posted-by').textContent = food.postedByEmail || 'Anonymous';
+    
+    document.getElementById('view-post-modal').style.display = 'flex';
+  });
+}
       });
     });
     
@@ -1895,6 +2271,25 @@
       });
     });
     
+  // For switching between subtabs
+  document.querySelectorAll('#food-posts .tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      // Remove active class from all tabs
+      document.querySelectorAll('#food-posts .tab').forEach(t => t.classList.remove('active'));
+      // Hide all subtab content
+      document.querySelectorAll('#food-posts .subtab-content').forEach(content => content.classList.remove('active'));
+
+      // Add active class to clicked tab
+      tab.classList.add('active');
+
+      // Show corresponding content
+      const subtab = tab.getAttribute('data-subtab');
+      document.getElementById(subtab).classList.add('active');
+    });
+  });
+
+
+    
     // Toggle sidebar on mobile
     document.querySelector('.toggle-sidebar').addEventListener('click', function() {
       document.querySelector('.admin-sidebar').classList.toggle('active');
@@ -1908,6 +2303,41 @@
     document.getElementById('add-food-btn').addEventListener('click', openAddFoodModal);
     document.getElementById('save-food-btn').addEventListener('click', addFoodPost);
     document.getElementById('update-food-btn').addEventListener('click', updateFoodPost);
+    // Subtab switch inside Food Posts tab
+document.querySelectorAll('#food-posts .tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    // Remove active class from all tabs
+    document.querySelectorAll('#food-posts .tab').forEach(t => t.classList.remove('active'));
+
+    // Hide all subtab contents
+    document.querySelectorAll('#food-posts .subtab-content').forEach(c => c.classList.remove('active'));
+
+    // Activate current tab
+    tab.classList.add('active');
+    const targetId = tab.getAttribute('data-subtab');
+    document.getElementById(targetId).classList.add('active');
+  });
+});
+// Subtab switching inside #food-posts
+// Fix the subtab switching for food posts
+document.querySelectorAll('#food-posts .tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    // Remove active class from all tabs in food-posts section only
+    document.querySelectorAll('#food-posts .tab').forEach(t => t.classList.remove('active'));
+    // Add active class to clicked tab
+    this.classList.add('active');
+    
+    // Hide all subtab contents in food-posts section
+    document.querySelectorAll('#food-posts .subtab-content').forEach(content => {
+      content.classList.remove('active');
+    });
+    
+    // Show the selected subtab content
+    const subtabId = this.getAttribute('data-subtab');
+    document.getElementById(subtabId).classList.add('active');
+  });
+});
+
   </script>
 </body>
 </html>
