@@ -167,6 +167,155 @@
   border: 1px solid #ccc;
   border-radius: 6px;
 }
+.report-btn {
+  background-color: #ff9800;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  min-width: 120px;
+  text-align: center;
+}
+
+.report-btn:hover {
+  background-color: #f57c00;
+}
+
+
+.report-btn:hover {
+  background-color: #f57c00;
+}
+/* Report Modal Styles */
+.report-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.report-reason {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+  cursor: pointer;
+}
+
+.report-reason:hover {
+  background-color: #eeeeee;
+}
+
+.report-reason input {
+  margin: 0;
+}
+/* Modal Styles */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 600px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Food Card Styles */
+.food-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.food-card-header {
+  padding: 15px 20px;
+  background-color: var(--primary-color);
+  color: var(--white);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.food-type {
+  background-color: rgba(255,255,255,0.2);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+}
+.food-card-body {
+  padding: 15px;
+}
+
+.food-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Equal spacing between input and buttons */
+  flex-wrap: wrap;
+}
+
+.claim-input {
+  height: 40px;
+  border-radius: 6px;
+  padding: 0 10px;
+  font-size: 0.9rem;
+}
+
+.food-card-footer .btn {
+  height: 40px;
+  padding: 0 16px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+/* Alert Styles */
+.alert-box {
+  padding: 15px;
+  margin: 15px 0;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.alert-box.success {
+  background: #e6f7ee;
+  color: #2e7d32;
+}
+
+.alert-box.error {
+  background: #ffebee;
+  color: #c62828;
+}
 
   </style>
 </head>
@@ -426,12 +575,108 @@
   <button onclick="handleClaim('${food.id}', ${food.quantity})" class="btn primary-btn">
     <i class="fas fa-hand-holding-heart"></i> Claim Food
   </button>
+   <button onclick="openReportModal('${food.id}')" class="btn report-btn">
+    <i class="fas fa-flag"></i> Report
+  </button>
 </div>
 `;
       
       return card;
     }
-    
+    // Open report modal
+function openReportModal(postId) {
+  const user = firebase.auth().currentUser;
+  if (!user) {
+    alert("Please login to report a post");
+    window.location.href = 'login.html?redirect=receive.html';
+    return;
+  }
+  
+  document.getElementById('report-post-id').value = postId;
+  document.getElementById('report-modal').style.display = 'flex';
+}
+
+// Submit report
+document.getElementById('submit-report-btn').addEventListener('click', function() {
+  const postId = document.getElementById('report-post-id').value;
+  const reason = document.querySelector('input[name="report-reason"]:checked').value;
+  const details = document.getElementById('report-details').value;
+  const user = firebase.auth().currentUser;
+  
+  if (!postId || !reason || !user) {
+    alert("Please fill all required fields");
+    return;
+  }
+  
+  c// In the submit report button event listener
+const reportData = {
+  reportedBy: user.uid,
+  reportedByEmail: user.email,
+  reason: reason,
+  details: details || '',
+  timestamp: new Date().toISOString(),
+  status: 'pending',
+  // Add these new fields
+  reporterLocation: '', // You can get this from user profile or geolocation
+
+  foodPostName: '', // Get this from the food post
+  foodPostOwner: '' // Get this from the food post
+};
+
+firebase.database().ref('food_posts/' + postId).once('value').then(snapshot => {
+  if (snapshot.exists()) {
+    const foodPost = snapshot.val();
+    reportData.foodPostName = foodPost.name;
+    reportData.foodPostOwner = foodPost.postedBy;
+  }
+  
+  // Then proceed with the report submission
+  const reportRef = firebase.database().ref(`reports/${postId}`).push();
+  reportRef.set(reportData)
+    .then(() => {
+  
+  // Add report to database
+  const reportRef = firebase.database().ref(`reports/${postId}`).push();
+  
+  reportRef.set(reportData)
+    .then(() => {
+      // Update flagged posts count
+      const flaggedRef = firebase.database().ref(`flagged_posts/${postId}`);
+      
+      flaggedRef.transaction(current => {
+        if (current === null) {
+          return {
+            flagCount: 1,
+            status: 'active',
+            lastFlagged: new Date().toISOString()
+          };
+        } else {
+          current.flagCount = (current.flagCount || 0) + 1;
+          current.lastFlagged = new Date().toISOString();
+          
+          // Automatically flag post if multiple reports
+          if (current.flagCount >= 3 && current.status === 'active') {
+            current.status = 'under_review';
+            
+            // Also update the food post status
+            firebase.database().ref(`food_posts/${postId}/status`).set('under_review');
+          }
+          
+          return current;
+        }
+      });
+      
+      alert("Thank you for your report. We will review this post soon.");
+      closeModal('report-modal');
+      document.getElementById('report-form').reset();
+    })
+        });
+    })
+    .catch(error => {
+      console.error("Error submitting report:", error);
+      alert("There was an error submitting your report. Please try again.");
+    });
+});
     // Handle food claim
 function handleClaim(foodId, availableQuantity) {
   const input = document.getElementById(`claim-qty-${foodId}`);
@@ -695,11 +940,188 @@ function handleClaim(foodId, availableQuantity) {
       });
     }
 
-    // Call these functions when the page loads
-    document.addEventListener('DOMContentLoaded', () => {
-      loadRecentDonations();
-      updateImpactStats();
+   document.addEventListener('DOMContentLoaded', () => {
+  const submitBtn = document.getElementById('submit-report-btn');
+  if (submitBtn) {
+    submitBtn.addEventListener('click', function () {
+      const postId = document.getElementById('report-post-id').value;
+      const reasonInput = document.querySelector('input[name="report-reason"]:checked');
+      const details = document.getElementById('report-details').value;
+      const user = firebase.auth().currentUser;
+
+      if (!postId || !reasonInput || !user) {
+        alert("Please fill all required fields");
+        return;
+      }
+
+      const reason = reasonInput.value;
+
+      const reportData = {
+        reportedBy: user.uid,
+        reportedByEmail: user.email,
+        reason: reason,
+        details: details || '',
+        timestamp: new Date().toISOString(),
+        status: 'pending'
+      };
+
+      const reportRef = firebase.database().ref(`reports/${postId}`).push();
+
+      reportRef.set(reportData)
+        .then(() => {
+          const flaggedRef = firebase.database().ref(`flagged_posts/${postId}`);
+
+          flaggedRef.transaction(current => {
+            if (current === null) {
+              return {
+                flagCount: 1,
+                status: 'active',
+                lastFlagged: new Date().toISOString()
+              };
+            } else {
+              current.flagCount = (current.flagCount || 0) + 1;
+              current.lastFlagged = new Date().toISOString();
+
+              if (current.flagCount >= 3 && current.status === 'active') {
+                current.status = 'under_review';
+                firebase.database().ref(`food_posts/${postId}/status`).set('under_review');
+              }
+
+              return current;
+            }
+          });
+
+          alert("✅ Thank you for your report. We will review this post soon.");
+          document.getElementById('report-form').reset();
+          closeModal('report-modal');
+        })
+        .catch(error => {
+          console.error("Error submitting report:", error);
+          alert("❌ There was an error submitting your report. Please try again.");
+        });
     });
+  } else {
+    console.error("❌ Submit report button not found in DOM.");
+  }
+});
+
   </script>
+  <!-- Report Modal -->
+<div id="report-modal" class="modal">
+  <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-header">
+      <div class="modal-title">Report This Post</div>
+      <div class="close-modal">&times;</div>
+    </div>
+    <div class="modal-body">
+      <form id="report-form">
+        <input type="hidden" id="report-post-id">
+        <div class="form-group">
+          <label>Reason for Reporting</label>
+          <div class="report-reasons">
+            <label class="report-reason">
+              <input type="radio" name="report-reason" value="fraud" required>
+              <span>Fraudulent Post</span>
+            </label>
+            <label class="report-reason">
+              <input type="radio" name="report-reason" value="fake">
+              <span>Fake Information</span>
+            </label>
+            <label class="report-reason">
+              <input type="radio" name="report-reason" value="inappropriate">
+              <span>Inappropriate Content</span>
+            </label>
+            <label class="report-reason">
+              <input type="radio" name="report-reason" value="other">
+              <span>Other</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="report-details">Additional Details</label>
+          <textarea id="report-details" rows="3" placeholder="Please provide more details..."></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger close-modal">Cancel</button>
+      <button class="btn btn-primary" id="submit-report-btn">Submit Report</button>
+
+    </div>
+  </div>
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Close modal on clicking close button
+    document.querySelectorAll('.close-modal').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('report-modal').style.display = 'none';
+      });
+    });
+
+    // Submit report button logic
+    const submitBtn = document.getElementById('submit-report-btn');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', function () {
+        const postId = document.getElementById('report-post-id').value;
+        const reasonInput = document.querySelector('input[name="report-reason"]:checked');
+        const details = document.getElementById('report-details').value;
+        const user = firebase.auth().currentUser;
+
+        if (!postId || !reasonInput || !user) {
+          alert("Please fill all required fields and login.");
+          return;
+        }
+
+        const reason = reasonInput.value;
+
+        const reportData = {
+          reportedBy: user.uid,
+          reportedByEmail: user.email,
+          reason: reason,
+          details: details || '',
+          timestamp: new Date().toISOString(),
+          status: 'pending'
+        };
+
+        const reportRef = firebase.database().ref(`reports/${postId}`).push();
+
+        reportRef.set(reportData)
+          .then(() => {
+            const flaggedRef = firebase.database().ref(`flagged_posts/${postId}`);
+
+            flaggedRef.transaction(current => {
+              if (current === null) {
+                return {
+                  flagCount: 1,
+                  status: 'active',
+                  lastFlagged: new Date().toISOString()
+                };
+              } else {
+                current.flagCount = (current.flagCount || 0) + 1;
+                current.lastFlagged = new Date().toISOString();
+
+                if (current.flagCount >= 3 && current.status === 'active') {
+                  current.status = 'under_review';
+                  firebase.database().ref(`food_posts/${postId}/status`).set('under_review');
+                }
+
+                return current;
+              }
+            });
+
+            alert("✅ Report submitted successfully!");
+            document.getElementById('report-form').reset();
+            document.getElementById('report-modal').style.display = 'none';
+          })
+          .catch(error => {
+            console.error("Error submitting report:", error);
+            alert("❌ Error submitting report. Please try again.");
+          });
+      });
+    }
+  });
+</script>
+
 </body>
 </html>
